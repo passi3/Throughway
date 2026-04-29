@@ -8,17 +8,31 @@
 
 /* Begin PBXBuildFile section */
 		4091EC612F9E05F100A77170 /* Alamofire in Frameworks */ = {isa = PBXBuildFile; productRef = 4091EC602F9E05F100A77170 /* Alamofire */; };
-		4091EC642F9E06AC00A77170 /* RealmSwift in Frameworks */ = {isa = PBXBuildFile; productRef = 4091EC632F9E06AC00A77170 /* RealmSwift */; };
 		4091EC672F9E06CB00A77170 /* Kingfisher in Frameworks */ = {isa = PBXBuildFile; productRef = 4091EC662F9E06CB00A77170 /* Kingfisher */; };
+		4091ED5E2FA08EE800A77170 /* FirebaseMessaging in Frameworks */ = {isa = PBXBuildFile; productRef = 4091ED5D2FA08EE800A77170 /* FirebaseMessaging */; };
+		4091ED642FA097F900A77170 /* iamport-ios in Frameworks */ = {isa = PBXBuildFile; productRef = 4091ED632FA097F900A77170 /* iamport-ios */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
 		4091EC4F2F9E04EB00A77170 /* Throughway.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Throughway.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		4091ED612FA08F0700A77170 /* Exceptions for "Throughway" folder in "Throughway" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = 4091EC4E2F9E04EB00A77170 /* Throughway */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
+
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		4091EC512F9E04EB00A77170 /* Throughway */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				4091ED612FA08F0700A77170 /* Exceptions for "Throughway" folder in "Throughway" target */,
+			);
 			path = Throughway;
 			sourceTree = "<group>";
 		};
@@ -29,8 +43,9 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				4091ED642FA097F900A77170 /* iamport-ios in Frameworks */,
+				4091ED5E2FA08EE800A77170 /* FirebaseMessaging in Frameworks */,
 				4091EC672F9E06CB00A77170 /* Kingfisher in Frameworks */,
-				4091EC642F9E06AC00A77170 /* RealmSwift in Frameworks */,
 				4091EC612F9E05F100A77170 /* Alamofire in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -75,8 +90,9 @@
 			name = Throughway;
 			packageProductDependencies = (
 				4091EC602F9E05F100A77170 /* Alamofire */,
-				4091EC632F9E06AC00A77170 /* RealmSwift */,
 				4091EC662F9E06CB00A77170 /* Kingfisher */,
+				4091ED5D2FA08EE800A77170 /* FirebaseMessaging */,
+				4091ED632FA097F900A77170 /* iamport-ios */,
 			);
 			productName = Throughway;
 			productReference = 4091EC4F2F9E04EB00A77170 /* Throughway.app */;
@@ -108,8 +124,9 @@
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
 				4091EC5F2F9E05F100A77170 /* XCRemoteSwiftPackageReference "Alamofire" */,
-				4091EC622F9E06AC00A77170 /* XCRemoteSwiftPackageReference "realm-swift" */,
 				4091EC652F9E06CB00A77170 /* XCRemoteSwiftPackageReference "Kingfisher" */,
+				4091ED5C2FA08EE800A77170 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */,
+				4091ED622FA097F900A77170 /* XCRemoteSwiftPackageReference "iamport-ios" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 4091EC502F9E04EB00A77170 /* Products */;
@@ -268,11 +285,13 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = Throughway/Throughway.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = 29MZ57KJPA;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = Throughway/Info.plist;
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -292,7 +311,7 @@
 				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
 				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = NO;
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
-				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
+				SWIFT_DEFAULT_ACTOR_ISOLATION = nonisolated;
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
 				SWIFT_VERSION = 5.0;
@@ -305,11 +324,13 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = Throughway/Throughway.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = 29MZ57KJPA;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = Throughway/Info.plist;
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -329,7 +350,7 @@
 				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
 				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = NO;
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
-				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
+				SWIFT_DEFAULT_ACTOR_ISOLATION = nonisolated;
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
 				SWIFT_VERSION = 5.0;
@@ -369,20 +390,28 @@
 				minimumVersion = 5.11.2;
 			};
 		};
-		4091EC622F9E06AC00A77170 /* XCRemoteSwiftPackageReference "realm-swift" */ = {
-			isa = XCRemoteSwiftPackageReference;
-			repositoryURL = "https://github.com/realm/realm-swift";
-			requirement = {
-				branch = community;
-				kind = branch;
-			};
-		};
 		4091EC652F9E06CB00A77170 /* XCRemoteSwiftPackageReference "Kingfisher" */ = {
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/onevcat/Kingfisher.git";
 			requirement = {
 				kind = upToNextMajorVersion;
 				minimumVersion = 8.8.1;
+			};
+		};
+		4091ED5C2FA08EE800A77170 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/firebase/firebase-ios-sdk";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 12.12.1;
+			};
+		};
+		4091ED622FA097F900A77170 /* XCRemoteSwiftPackageReference "iamport-ios" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/iamport/iamport-ios.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 1.4.7;
 			};
 		};
 /* End XCRemoteSwiftPackageReference section */
@@ -393,15 +422,20 @@
 			package = 4091EC5F2F9E05F100A77170 /* XCRemoteSwiftPackageReference "Alamofire" */;
 			productName = Alamofire;
 		};
-		4091EC632F9E06AC00A77170 /* RealmSwift */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = 4091EC622F9E06AC00A77170 /* XCRemoteSwiftPackageReference "realm-swift" */;
-			productName = RealmSwift;
-		};
 		4091EC662F9E06CB00A77170 /* Kingfisher */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = 4091EC652F9E06CB00A77170 /* XCRemoteSwiftPackageReference "Kingfisher" */;
 			productName = Kingfisher;
+		};
+		4091ED5D2FA08EE800A77170 /* FirebaseMessaging */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 4091ED5C2FA08EE800A77170 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseMessaging;
+		};
+		4091ED632FA097F900A77170 /* iamport-ios */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 4091ED622FA097F900A77170 /* XCRemoteSwiftPackageReference "iamport-ios" */;
+			productName = "iamport-ios";
 		};
 /* End XCSwiftPackageProductDependency section */
 	};
