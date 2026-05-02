@@ -59,6 +59,7 @@ final class NetworkManager: @unchecked Sendable {
 
     // MARK: - Public Interface
 
+    /// Decodable 응답
     func request<T: Decodable>(_ target: any TargetType, as type: T.Type = T.self) async throws -> T {
         if case .multipart(let body) = target.body {
             return try await uploadMultipart(body, target: target)
@@ -74,6 +75,7 @@ final class NetworkManager: @unchecked Sendable {
         return try decode(data, as: type)
     }
 
+    /// 빈 응답 (204, 200 no body)
     func request(_ target: any TargetType) async throws {
         let urlRequest = try buildURLRequest(from: target)
         let response = await session
@@ -235,7 +237,7 @@ private final class AuthInterceptor: RequestInterceptor, @unchecked Sendable {
         self.refreshTarget    = refreshTarget
     }
 
-    // Authorization 헤더 주입
+    // Authorization 헤더 주입 (만료 임박 시 Proactive Refresh 포함)
     func adapt(
         _ urlRequest: URLRequest,
         for session: Session,
@@ -246,12 +248,43 @@ private final class AuthInterceptor: RequestInterceptor, @unchecked Sendable {
             let requiresAuthorization = request.value(forHTTPHeaderField: NetworkManager.authorizationMarkerHeader) == "true"
             request.setValue(nil, forHTTPHeaderField: NetworkManager.authorizationMarkerHeader)
 
-            if requiresAuthorization, let token = await loadAccessToken() {
-                request.setValue(token, forHTTPHeaderField: "Authorization")
+            if requiresAuthorization {
+                // 만료 1분 전이면 미리 갱신
+                if let token = await loadAccessToken(),
+                   let expiry = decodeJWTExpiry(token),
+                   expiry.timeIntervalSinceNow < 60 {
+                    let isFirst = await coordinator.beginRefreshIfNeeded()
+                    if isFirst {
+                        if let refreshToken = await loadRefreshToken(),
+                           let tokens = try? await fetchNewTokens(using: refreshToken) {
+                            try? await saveTokens(tokens)
+                        }
+                        _ = await coordinator.finishRefresh(succeeded: true)
+                    } else {
+                        // 다른 요청이 이미 갱신 중 → 완료까지 대기
+                        await coordinator.waitForRefresh()
+                    }
+                }
+                if let token = await loadAccessToken() {
+                    request.setValue(token, forHTTPHeaderField: "Authorization")
+                }
             }
             NetworkManager.logIfNeeded(request)
             completion(.success(request))
         }
+    }
+
+    /// JWT payload의 exp 클레임을 Date로 디코딩
+    private func decodeJWTExpiry(_ token: String) -> Date? {
+        let parts = token.split(separator: ".")
+        guard parts.count == 3 else { return nil }
+        var base64 = String(parts[1])
+        let remainder = base64.count % 4
+        if remainder != 0 { base64 += String(repeating: "=", count: 4 - remainder) }
+        guard let data = Data(base64Encoded: base64),
+              let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+              let exp = json["exp"] as? TimeInterval else { return nil }
+        return Date(timeIntervalSince1970: exp)
     }
 
     // 401 → 토큰 갱신 후 재시도
@@ -336,6 +369,8 @@ private final class AuthInterceptor: RequestInterceptor, @unchecked Sendable {
 private actor RefreshCoordinator {
     private var isRefreshing = false
     private var pending: [(RetryResult) -> Void] = []
+    /// adapt()의 proactive refresh 대기자 (async/await 기반)
+    private var waiters: [CheckedContinuation<Void, Never>] = []
 
     /// true → 이 호출이 갱신을 시작해야 함, false → 대기열에 추가
     func beginRefreshIfNeeded() -> Bool {
@@ -344,14 +379,24 @@ private actor RefreshCoordinator {
         return true
     }
 
+    /// retry() 전용: completion 기반 대기
     func enqueue(_ completion: @escaping (RetryResult) -> Void) {
         pending.append(completion)
+    }
+
+    /// adapt() 전용: 갱신 완료까지 suspend
+    func waitForRefresh() async {
+        await withCheckedContinuation { continuation in
+            waiters.append(continuation)
+        }
     }
 
     func finishRefresh(succeeded: Bool) -> [(RetryResult) -> Void] {
         isRefreshing = false
         let waiting = pending
         pending = []
+        waiters.forEach { $0.resume() }
+        waiters = []
         return waiting
     }
 }
