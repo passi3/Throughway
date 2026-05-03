@@ -30,13 +30,39 @@ final class DetailViewModel: BaseViewModel<DetailFeature.State, DetailFeature.In
     var isKeep: Bool { state.detail?.isKeep ?? summary.isKeep }
     var pointReward: Int { state.detail?.pointReward ?? summary.pointReward }
 
+    var rating: Double? { state.detail?.rating }
+    var reviewCount: Int? { state.detail?.reviewCount }
+    var restrictions: ActivityRestrictionsDTO? { state.detail?.restrictions }
+
+    var discountPercent: Int? {
+        let orig = price.original, fin = price.final
+        guard orig > 0, fin < orig else { return nil }
+        return Int(round(Double(orig - fin) / Double(orig) * 100))
+    }
+
+    var availableDates: [Date] {
+        guard let startRaw = state.detail?.startDate,
+              let endRaw   = state.detail?.endDate else { return [] }
+        guard let start = AppFormatter.serverDate.date(from: startRaw),
+              let end   = AppFormatter.serverDate.date(from: endRaw),
+              start <= end else { return [] }
+        var dates: [Date] = []
+        var cur = start
+        let cal = Calendar.current
+        while cur <= end {
+            dates.append(cur)
+            cur = cal.date(byAdding: .day, value: 1, to: cur)!
+        }
+        return dates
+    }
+
     override func send(_ intent: DetailFeature.Intent) {
         switch intent {
         case .onAppear:
             Task { await fetchDetail() }
 
-        case .monthSelected(let month):
-            reduce { $0.selectedMonth = month }
+        case .dateSelected(let index):
+            reduce { $0.selectedDateIndex = index }
 
         case .timeSelected(let time):
             reduce { $0.selectedTime = time }
