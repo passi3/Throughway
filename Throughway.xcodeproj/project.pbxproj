@@ -11,7 +11,24 @@
 		4091EC672F9E06CB00A77170 /* Kingfisher in Frameworks */ = {isa = PBXBuildFile; productRef = 4091EC662F9E06CB00A77170 /* Kingfisher */; };
 		4091ED5E2FA08EE800A77170 /* FirebaseMessaging in Frameworks */ = {isa = PBXBuildFile; productRef = 4091ED5D2FA08EE800A77170 /* FirebaseMessaging */; };
 		4091ED642FA097F900A77170 /* iamport-ios in Frameworks */ = {isa = PBXBuildFile; productRef = 4091ED632FA097F900A77170 /* iamport-ios */; };
+		4091EE0D2FA71DA500A77170 /* RealmSwift in Frameworks */ = {isa = PBXBuildFile; productRef = 4091EE0C2FA71DA500A77170 /* RealmSwift */; };
+		4091EE102FA71ECF00A77170 /* SocketIO in Frameworks */ = {isa = PBXBuildFile; productRef = 4091EE0F2FA71ECF00A77170 /* SocketIO */; };
+		4091EE112FA736BA00A77170 /* RealmSwift in Embed Frameworks */ = {isa = PBXBuildFile; productRef = 4091EE0C2FA71DA500A77170 /* RealmSwift */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
 /* End PBXBuildFile section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		4091EE122FA736BA00A77170 /* Embed Frameworks */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 10;
+			files = (
+				4091EE112FA736BA00A77170 /* RealmSwift in Embed Frameworks */,
+			);
+			name = "Embed Frameworks";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
 		4091EC4F2F9E04EB00A77170 /* Throughway.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Throughway.app; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -46,7 +63,9 @@
 				4091ED642FA097F900A77170 /* iamport-ios in Frameworks */,
 				4091ED5E2FA08EE800A77170 /* FirebaseMessaging in Frameworks */,
 				4091EC672F9E06CB00A77170 /* Kingfisher in Frameworks */,
+				4091EE0D2FA71DA500A77170 /* RealmSwift in Frameworks */,
 				4091EC612F9E05F100A77170 /* Alamofire in Frameworks */,
+				4091EE102FA71ECF00A77170 /* SocketIO in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -79,6 +98,7 @@
 				4091EC4B2F9E04EB00A77170 /* Sources */,
 				4091EC4C2F9E04EB00A77170 /* Frameworks */,
 				4091EC4D2F9E04EB00A77170 /* Resources */,
+				4091EE122FA736BA00A77170 /* Embed Frameworks */,
 			);
 			buildRules = (
 			);
@@ -93,6 +113,8 @@
 				4091EC662F9E06CB00A77170 /* Kingfisher */,
 				4091ED5D2FA08EE800A77170 /* FirebaseMessaging */,
 				4091ED632FA097F900A77170 /* iamport-ios */,
+				4091EE0C2FA71DA500A77170 /* RealmSwift */,
+				4091EE0F2FA71ECF00A77170 /* SocketIO */,
 			);
 			productName = Throughway;
 			productReference = 4091EC4F2F9E04EB00A77170 /* Throughway.app */;
@@ -127,6 +149,8 @@
 				4091EC652F9E06CB00A77170 /* XCRemoteSwiftPackageReference "Kingfisher" */,
 				4091ED5C2FA08EE800A77170 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */,
 				4091ED622FA097F900A77170 /* XCRemoteSwiftPackageReference "iamport-ios" */,
+				4091EE0B2FA71DA500A77170 /* XCRemoteSwiftPackageReference "realm-swift" */,
+				4091EE0E2FA71ECF00A77170 /* XCRemoteSwiftPackageReference "socket.io-client-swift" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 4091EC502F9E04EB00A77170 /* Products */;
@@ -414,6 +438,22 @@
 				minimumVersion = 1.4.7;
 			};
 		};
+		4091EE0B2FA71DA500A77170 /* XCRemoteSwiftPackageReference "realm-swift" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/realm/realm-swift";
+			requirement = {
+				branch = community;
+				kind = branch;
+			};
+		};
+		4091EE0E2FA71ECF00A77170 /* XCRemoteSwiftPackageReference "socket.io-client-swift" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/socketio/socket.io-client-swift.git";
+			requirement = {
+				branch = master;
+				kind = branch;
+			};
+		};
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
@@ -436,6 +476,16 @@
 			isa = XCSwiftPackageProductDependency;
 			package = 4091ED622FA097F900A77170 /* XCRemoteSwiftPackageReference "iamport-ios" */;
 			productName = "iamport-ios";
+		};
+		4091EE0C2FA71DA500A77170 /* RealmSwift */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 4091EE0B2FA71DA500A77170 /* XCRemoteSwiftPackageReference "realm-swift" */;
+			productName = RealmSwift;
+		};
+		4091EE0F2FA71ECF00A77170 /* SocketIO */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 4091EE0E2FA71ECF00A77170 /* XCRemoteSwiftPackageReference "socket.io-client-swift" */;
+			productName = SocketIO;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

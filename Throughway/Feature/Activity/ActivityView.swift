@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import Kingfisher
 
 struct ActivityView: View {
     @Environment(\.dismiss) private var dismiss
@@ -114,26 +115,17 @@ private extension ActivityView {
 
     func heroBannerCard(_ banner: BannerItemDTO) -> some View {
         ZStack(alignment: .bottomLeading) {
-            if let imageURL = URL(string: APIConstants.baseURL + banner.imageUrl) {
-                AsyncImage(url: imageURL) { phase in
-                    switch phase {
-                    case .success(let image):
-                        image.resizable().scaledToFill()
-                    default:
-                        LinearGradient(
-                            colors: [Color.blackSeafoam, Color.deepSeafoam],
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
-                        )
-                    }
+            KFImage(banner.imageUrl.serverImageURL)
+                .requestModifier(AuthImageModifier())
+                .placeholder {
+                    LinearGradient(
+                        colors: [Color.blackSeafoam, Color.deepSeafoam],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    )
                 }
-            } else {
-                LinearGradient(
-                    colors: [Color.blackSeafoam, Color.deepSeafoam],
-                    startPoint: .topLeading,
-                    endPoint: .bottomTrailing
-                )
-            }
+                .resizable()
+                .scaledToFill()
 
             LinearGradient(
                 colors: [.clear, .black.opacity(0.55)],
@@ -272,13 +264,12 @@ struct ActivityCard: View {
 
     @ViewBuilder
     private var activityThumbnail: some View {
-        if let thumbnail = activity.thumbnails.first,
-           let url = URL(string: thumbnail) {
-            AsyncImage(url: url) { image in
-                image.resizable().scaledToFill()
-            } placeholder: {
-                thumbnailPlaceholder
-            }
+        if let thumbnail = activity.thumbnails.first {
+            KFImage(thumbnail.serverImageURL)
+                .requestModifier(AuthImageModifier())
+                .placeholder { thumbnailPlaceholder }
+                .resizable()
+                .scaledToFill()
         } else {
             thumbnailPlaceholder
         }
@@ -294,10 +285,3 @@ struct ActivityCard: View {
     }
 }
 
-private extension Int {
-    var wonFormatted: String {
-        let formatter = NumberFormatter()
-        formatter.numberStyle = .decimal
-        return (formatter.string(from: NSNumber(value: self)) ?? "\(self)") + "원"
-    }
-}

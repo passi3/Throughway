@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import Kingfisher
 
 struct ProfileView: View {
     let onLogout: () -> Void
@@ -188,6 +189,7 @@ private extension ProfileView {
     }
 
     func profileActivityCard(_ activity: ActivitySummaryDTO) -> some View {
+        NavigationLink(destination: DetailView(activity: activity)) {
         HStack(spacing: 12) {
             activityThumbnail(activity)
                 .frame(width: 90, height: 90)
@@ -239,17 +241,18 @@ private extension ProfileView {
             RoundedRectangle(cornerRadius: 12)
                 .stroke(Color.gray15, lineWidth: 1)
         )
+        }
+        .buttonStyle(.plain)
     }
 
     @ViewBuilder
     func activityThumbnail(_ activity: ActivitySummaryDTO) -> some View {
-        if let thumbnail = activity.thumbnails.first,
-           let url = URL(string: thumbnail) {
-            AsyncImage(url: url) { image in
-                image.resizable().scaledToFill()
-            } placeholder: {
-                thumbnailPlaceholder
-            }
+        if let thumbnail = activity.thumbnails.first {
+            KFImage(thumbnail.serverImageURL)
+                .requestModifier(AuthImageModifier())
+                .placeholder { thumbnailPlaceholder }
+                .resizable()
+                .scaledToFill()
         } else {
             thumbnailPlaceholder
         }
@@ -283,10 +286,3 @@ private extension ProfileView {
     }
 }
 
-private extension Int {
-    var wonFormatted: String {
-        let formatter = NumberFormatter()
-        formatter.numberStyle = .decimal
-        return (formatter.string(from: NSNumber(value: self)) ?? "\(self)") + "원"
-    }
-}

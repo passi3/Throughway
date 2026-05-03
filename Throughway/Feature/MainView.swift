@@ -25,7 +25,7 @@ struct MainView: View {
                 }
                 .tag(1)
 
-            Text("채팅")
+            ChatListView()
                 .tabItem {
                     Label("채팅", image: selectedTab == 2 ? "icon_tab_chat_heart_fill" : "icon_tab_chat_heart")
                 }

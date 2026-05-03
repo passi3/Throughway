@@ -6,51 +6,58 @@
 //
 
 import SwiftUI
+import Kingfisher
 
 struct DetailView: View {
     @StateObject private var viewModel: DetailViewModel
-    @Environment(\.dismiss) private var dismiss
-
-    private let months = ["5월 가을", "1일 동수", "2사 1일"]
-    private let times = ["8:00", "8:30", "9:00", "9:30", "10:00", "10:30", "1:00", "1:30", "2:00", "2:30"]
-
+    
+    private let times = [
+        "8:00", "8:30", "9:00", "9:30", "10:00", "10:30", "11:00", "11:30",
+        "13:00", "13:30", "14:00", "14:30", "15:00", "15:30", "16:00", "16:30"
+    ]
+    
     init(activity: ActivitySummaryDTO) {
         _viewModel = StateObject(wrappedValue: DetailViewModel(summary: activity))
     }
-
+    
     var body: some View {
         ScrollView {
             VStack(spacing: 0) {
                 heroImage
-
+                
                 VStack(alignment: .leading, spacing: 20) {
                     titleSection
+                    divider
                     infoSection
                     divider
-                    if let desc = viewModel.state.detail?.description, !desc.isEmpty {
-                        descriptionSection(desc)
-                        divider
-                    }
-                    if let schedule = viewModel.state.detail?.schedule {
-                        scheduleSection(schedule)
-                        divider
-                    }
                     priceSection
                     divider
+                    Text("엑티비티 예약설정")
+                        .font(.Pretendard.body1)
+                        .fontWeight(.bold)
+                        .foregroundStyle(Color.gray90)
                     dateSection
                     divider
                     timeSection
                 }
                 .padding(16)
-
+                
                 Spacer().frame(height: 80)
             }
         }
         .background(Color.gray0)
-        .ignoresSafeArea(edges: .top)
-        .overlay(alignment: .top) { navigationBar }
         .overlay(alignment: .bottom) { bottomBar }
-        .navigationBarHidden(true)
+        .navigationTitle(viewModel.title)
+        .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            ToolbarItem(placement: .navigationBarTrailing) {
+                Button {
+                } label: {
+                    Image(systemName: viewModel.isKeep ? "heart.fill" : "heart")
+                        .foregroundStyle(viewModel.isKeep ? Color.rosyPunch : Color.gray90)
+                }
+            }
+        }
         .task { viewModel.send(.onAppear) }
     }
 }
@@ -58,79 +65,30 @@ struct DetailView: View {
 // MARK: - Sections
 
 private extension DetailView {
-
-    var navigationBar: some View {
-        HStack {
-            Button { dismiss() } label: {
-                Circle()
-                    .fill(.white.opacity(0.85))
-                    .frame(width: 36, height: 36)
-                    .overlay(
-                        AppIcon.back
-                            .resizable()
-                            .scaledToFit()
-                            .frame(width: 18, height: 18)
-                            .foregroundStyle(Color.gray90)
-                    )
-            }
-            Spacer()
-            Button {} label: {
-                Circle()
-                    .fill(.white.opacity(0.85))
-                    .frame(width: 36, height: 36)
-                    .overlay(
-                        Image(systemName: viewModel.isKeep ? "heart.fill" : "heart")
-                            .font(.system(size: 16))
-                            .foregroundStyle(viewModel.isKeep ? Color.rosyPunch : Color.gray90)
-                    )
-            }
-        }
-        .padding(.horizontal, 16)
-        .padding(.top, 56)
-    }
-
+    
     var heroImage: some View {
-        ZStack {
-            if let thumbnail = viewModel.thumbnails.first, let url = URL(string: thumbnail) {
-                AsyncImage(url: url) { image in
-                    image.resizable().scaledToFill()
-                } placeholder: {
-                    heroPlaceholder
-                }
-                .frame(maxWidth: .infinity)
-                .frame(height: 300)
-                .clipped()
-            } else {
+        Group {
+            if viewModel.thumbnails.isEmpty {
                 heroPlaceholder
-                    .frame(maxWidth: .infinity)
                     .frame(height: 300)
-            }
-
-            VStack {
-                Spacer()
-                HStack {
-                    Spacer()
-                    if viewModel.thumbnails.count > 1 {
-                        VStack(spacing: 8) {
-                            ForEach(viewModel.thumbnails.prefix(4), id: \.self) { _ in
-                                RoundedRectangle(cornerRadius: 4)
-                                    .fill(Color.gray30)
-                                    .frame(width: 40, height: 40)
-                                    .overlay(
-                                        Image(systemName: "photo")
-                                            .font(.system(size: 12))
-                                            .foregroundStyle(Color.gray0)
-                                    )
-                            }
-                        }
-                        .padding(.trailing, 12)
-                        .padding(.bottom, 12)
+            } else {
+                TabView {
+                    ForEach(viewModel.thumbnails, id: \.self) { path in
+                        KFImage(path.serverImageURL)
+                            .requestModifier(AuthImageModifier())
+                            .placeholder { heroPlaceholder }
+                            .resizable()
+                            .scaledToFill()
+                            .clipped()
                     }
                 }
+                .tabViewStyle(.page(indexDisplayMode: viewModel.thumbnails.count > 1 ? .automatic : .never))
+                .frame(height: 300)
+                .clipped()
             }
         }
     }
-
+    
     var heroPlaceholder: some View {
         Rectangle()
             .fill(Color.gray15)
@@ -140,29 +98,73 @@ private extension DetailView {
                     .foregroundStyle(Color.gray30)
             )
     }
-
+    
     var titleSection: some View {
-        VStack(alignment: .leading, spacing: 10) {
+        VStack(alignment: .leading, spacing: 12) {
             Text(viewModel.title)
                 .font(.Pretendard.title1)
                 .fontWeight(.bold)
                 .foregroundStyle(Color.gray90)
-
-            HStack(spacing: 6) {
-                Text(viewModel.category)
+            
+            HStack(spacing: 8) {
+                Text(viewModel.country)
                     .font(.Pretendard.caption1)
                     .foregroundStyle(Color.gray60)
-
-                Image(systemName: "heart.fill")
-                    .font(.system(size: 10))
-                    .foregroundStyle(Color.rosyPunch)
-
-                Text("\(viewModel.keepCount)개")
+                
+                Text("|")
                     .font(.Pretendard.caption1)
-                    .fontWeight(.semibold)
-                    .foregroundStyle(Color.gray90)
+                    .foregroundStyle(Color.gray30)
+                
+                HStack(spacing: 3) {
+                    Circle()
+                        .fill(Color.blackSeafoam)
+                        .frame(width: 8, height: 8)
+                    Text("\(viewModel.pointReward)P")
+                        .font(.Pretendard.caption1)
+                        .fontWeight(.semibold)
+                        .foregroundStyle(Color.blackSeafoam)
+                }
+                
+                if let rating = viewModel.rating {
+                    Text("|")
+                        .font(.Pretendard.caption1)
+                        .foregroundStyle(Color.gray30)
+                    HStack(spacing: 3) {
+                        Image(systemName: "star.fill")
+                            .font(.system(size: 10))
+                            .foregroundStyle(Color.yellow)
+                        Text(String(format: "%.1f", rating))
+                            .font(.Pretendard.caption1)
+                            .fontWeight(.semibold)
+                            .foregroundStyle(Color.gray90)
+                        if let count = viewModel.reviewCount {
+                            Text("(\(count))")
+                                .font(.Pretendard.caption2)
+                                .foregroundStyle(Color.gray45)
+                        }
+                    }
+                }
             }
-
+            
+            if let desc = viewModel.state.detail?.description, !desc.isEmpty {
+                Text(desc)
+                    .font(.Pretendard.body3)
+                    .foregroundStyle(Color.gray75)
+                    .lineSpacing(4)
+            }
+            
+            HStack(spacing: 16) {
+                Label("누적 구매 \(viewModel.state.detail?.totalOrderCount ?? 0)회",
+                      systemImage: "bag")
+                .font(.Pretendard.caption1)
+                .foregroundStyle(Color.gray60)
+                
+                Label("KEEP \(viewModel.keepCount)회",
+                      systemImage: viewModel.isKeep ? "heart.fill" : "heart")
+                .font(.Pretendard.caption1)
+                .foregroundStyle(Color.gray60)
+            }
+            
             if !viewModel.tags.isEmpty {
                 Text(viewModel.tags.map { "#\($0)" }.joined(separator: " "))
                     .font(.Pretendard.body3)
@@ -171,14 +173,26 @@ private extension DetailView {
             }
         }
     }
-
+    
     var infoSection: some View {
         HStack(spacing: 0) {
-            infoItem(icon: "mappin.circle", title: "국가", value: viewModel.country)
+            infoItem(
+                icon: "person.crop.circle.badge.checkmark",
+                title: "연령제한",
+                value: viewModel.restrictions?.minAge.map { "\($0)세" } ?? "없음"
+            )
             Divider().frame(height: 40)
-            infoItem(icon: "tag", title: "카테고리", value: viewModel.category)
+            infoItem(
+                icon: "ruler",
+                title: "신장제한",
+                value: viewModel.restrictions?.minHeight.map { "\($0)cm" } ?? "없음"
+            )
             Divider().frame(height: 40)
-            infoItem(icon: "dollarsign.circle", title: "포인트", value: "\(viewModel.pointReward)P")
+            infoItem(
+                icon: "person.2",
+                title: "최대참가인원",
+                value: viewModel.state.detail?.schedule?.maxParticipants.map { "\($0)명" } ?? "-"
+            )
         }
         .frame(maxWidth: .infinity)
         .padding(.vertical, 16)
@@ -187,7 +201,7 @@ private extension DetailView {
                 .stroke(Color.gray15, lineWidth: 1)
         )
     }
-
+    
     func infoItem(icon: String, title: String, value: String) -> some View {
         VStack(spacing: 6) {
             Image(systemName: icon)
@@ -204,147 +218,147 @@ private extension DetailView {
         }
         .frame(maxWidth: .infinity)
     }
-
-    func descriptionSection(_ text: String) -> some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text("액티비티 소개")
-                .font(.Pretendard.body2)
-                .fontWeight(.semibold)
-                .foregroundStyle(Color.gray90)
-            Text(text)
-                .font(.Pretendard.body3)
-                .foregroundStyle(Color.gray75)
-                .lineSpacing(4)
-        }
-    }
-
-    func scheduleSection(_ schedule: ActivityScheduleDTO) -> some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text("일정 정보")
-                .font(.Pretendard.body2)
-                .fontWeight(.semibold)
-                .foregroundStyle(Color.gray90)
-
-            VStack(alignment: .leading, spacing: 8) {
-                if let min = schedule.minParticipants, let max = schedule.maxParticipants {
-                    scheduleRow(icon: "person.2", label: "참여 인원", value: "\(min) ~ \(max)명")
-                }
-                if let km = schedule.durationKm {
-                    scheduleRow(icon: "figure.walk", label: "이동 거리", value: String(format: "%.1f km", km))
+    
+    var priceSection: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            if viewModel.price.original > viewModel.price.final {
+                HStack(spacing: 6) {
+                    Image(systemName: "arrow.down")
+                        .font(.system(size: 11))
+                        .foregroundStyle(Color.rosyPunch)
+                    Text(viewModel.price.original.wonFormatted)
+                        .font(.Pretendard.body3)
+                        .foregroundStyle(Color.gray45)
+                        .strikethrough(true, color: Color.gray45)
                 }
             }
-        }
-    }
-
-    func scheduleRow(icon: String, label: String, value: String) -> some View {
-        HStack(spacing: 10) {
-            Image(systemName: icon)
-                .font(.system(size: 14))
-                .foregroundStyle(Color.blackSeafoam)
-                .frame(width: 20)
-            Text(label)
-                .font(.Pretendard.body3)
-                .foregroundStyle(Color.gray60)
-            Spacer()
-            Text(value)
-                .font(.Pretendard.body3)
-                .fontWeight(.semibold)
-                .foregroundStyle(Color.gray90)
-        }
-    }
-
-    var priceSection: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text("판매가")
-                .font(.Pretendard.caption1)
-                .foregroundStyle(Color.gray45)
-
-            HStack(alignment: .bottom, spacing: 8) {
+            
+            HStack(alignment: .firstTextBaseline, spacing: 8) {
+                Text("판매가")
+                    .font(.Pretendard.caption1)
+                    .foregroundStyle(Color.gray45)
+                
                 Text(viewModel.price.final.wonFormatted)
                     .font(.Pretendard.body1)
                     .fontWeight(.bold)
                     .foregroundStyle(Color.gray90)
-
-                if viewModel.price.original > viewModel.price.final {
-                    Text(viewModel.price.original.wonFormatted)
-                        .font(.Pretendard.body3)
-                        .foregroundStyle(Color.gray45)
-                        .strikethrough()
+                
+                if let pct = viewModel.discountPercent {
+                    Text("\(pct)%")
+                        .font(.Pretendard.caption1)
+                        .fontWeight(.semibold)
+                        .foregroundStyle(Color.gray0)
+                        .padding(.horizontal, 6)
+                        .padding(.vertical, 2)
+                        .background(Color.rosyPunch)
+                        .clipShape(RoundedRectangle(cornerRadius: 4))
                 }
             }
         }
     }
-
+    
     var dateSection: some View {
         VStack(alignment: .leading, spacing: 12) {
             Text("날짜 선택")
                 .font(.Pretendard.body2)
                 .fontWeight(.semibold)
                 .foregroundStyle(Color.gray90)
-
-            HStack(spacing: 8) {
-                ForEach(Array(months.enumerated()), id: \.offset) { index, month in
-                    Button {
-                        viewModel.send(.monthSelected(index))
-                    } label: {
-                        Text(month)
-                            .font(.Pretendard.caption1)
-                            .fontWeight(viewModel.state.selectedMonth == index ? .semibold : .regular)
-                            .foregroundStyle(viewModel.state.selectedMonth == index ? Color.gray0 : Color.gray60)
-                            .padding(.horizontal, 12)
-                            .padding(.vertical, 8)
-                            .background(viewModel.state.selectedMonth == index ? Color.blackSeafoam : Color.gray15)
-                            .clipShape(RoundedRectangle(cornerRadius: 8))
+            
+            if viewModel.availableDates.isEmpty {
+                Text("날짜 정보를 불러오는 중...")
+                    .font(.Pretendard.caption1)
+                    .foregroundStyle(Color.gray45)
+            } else {
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: 8) {
+                        ForEach(Array(viewModel.availableDates.enumerated()), id: \.offset) { index, date in
+                            Button {
+                                viewModel.send(.dateSelected(index))
+                            } label: {
+                                Text(AppFormatter.chipDate.string(from: date))
+                                    .font(.Pretendard.caption1)
+                                    .fontWeight(viewModel.state.selectedDateIndex == index ? .semibold : .regular)
+                                    .foregroundStyle(viewModel.state.selectedDateIndex == index ? Color.gray0 : Color.gray60)
+                                    .padding(.horizontal, 14)
+                                    .padding(.vertical, 8)
+                                    .background(viewModel.state.selectedDateIndex == index ? Color.blackSeafoam : Color.gray15)
+                                    .clipShape(RoundedRectangle(cornerRadius: 8))
+                            }
+                        }
                     }
+                    .padding(.horizontal, 1)
                 }
             }
         }
     }
-
+    
     var timeSection: some View {
-        VStack(alignment: .leading, spacing: 12) {
+        VStack(alignment: .leading, spacing: 16) {
             Text("시간 선택")
                 .font(.Pretendard.body2)
                 .fontWeight(.semibold)
                 .foregroundStyle(Color.gray90)
-
-            LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 8), count: 4), spacing: 8) {
-                ForEach(times, id: \.self) { time in
-                    Button {
-                        viewModel.send(.timeSelected(time))
-                    } label: {
-                        Text(time)
-                            .font(.Pretendard.caption1)
-                            .fontWeight(viewModel.state.selectedTime == time ? .semibold : .regular)
-                            .foregroundStyle(viewModel.state.selectedTime == time ? Color.gray0 : Color.gray60)
-                            .frame(maxWidth: .infinity)
-                            .frame(height: 36)
-                            .background(viewModel.state.selectedTime == time ? Color.blackSeafoam : Color.gray15)
-                            .clipShape(RoundedRectangle(cornerRadius: 8))
-                    }
+            
+            if !amTimes.isEmpty {
+                timePeriodGrid(label: "오전", slots: amTimes)
+            }
+            if !pmTimes.isEmpty {
+                timePeriodGrid(label: "오후", slots: pmTimes)
+            }
+        }
+    }
+    
+    func timePeriodGrid(label: String, slots: [String]) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text(label)
+                .font(.Pretendard.caption1)
+                .fontWeight(.semibold)
+                .foregroundStyle(Color.gray60)
+            
+            LazyVGrid(
+                columns: Array(repeating: GridItem(.flexible(), spacing: 8), count: 4),
+                spacing: 8
+            ) {
+                ForEach(slots, id: \.self) { time in
+                    timeChip(time)
                 }
             }
         }
     }
-
+    
+    func timeChip(_ time: String) -> some View {
+        let isSelected = viewModel.state.selectedTime == time
+        return Button {
+            viewModel.send(.timeSelected(time))
+        } label: {
+            Text(displayTime(time))
+                .font(.Pretendard.caption2)
+                .fontWeight(isSelected ? .semibold : .regular)
+                .foregroundStyle(isSelected ? Color.gray0 : Color.gray60)
+                .frame(maxWidth: .infinity)
+                .frame(height: 36)
+                .background(isSelected ? Color.blackSeafoam : Color.gray15)
+                .clipShape(RoundedRectangle(cornerRadius: 8))
+        }
+    }
+    
     var divider: some View {
         Rectangle()
             .fill(Color.gray15)
             .frame(height: 1)
     }
-
+    
     var bottomBar: some View {
         HStack(spacing: 12) {
-            VStack(alignment: .leading, spacing: 2) {
-                Text("판매가")
-                    .font(.Pretendard.caption2)
-                    .foregroundStyle(Color.gray45)
-                Text(viewModel.price.final.wonFormatted)
-                    .font(.Pretendard.body2)
-                    .fontWeight(.bold)
-                    .foregroundStyle(Color.gray90)
-            }
-
+            Text(viewModel.price.final.wonFormatted)
+                .font(.Pretendard.body2)
+                .fontWeight(.bold)
+                .frame(alignment: .leading)
+                .foregroundStyle(Color.gray90)
+                .frame(maxWidth: .infinity)
+            
+            Spacer()
+            
             Button {
             } label: {
                 Text("결제하기")
@@ -368,10 +382,21 @@ private extension DetailView {
     }
 }
 
-private extension Int {
-    var wonFormatted: String {
-        let formatter = NumberFormatter()
-        formatter.numberStyle = .decimal
-        return (formatter.string(from: NSNumber(value: self)) ?? "\(self)") + "원"
+// MARK: - Time Helpers
+
+private extension DetailView {
+    var amTimes: [String] { times.filter { hour(of: $0) < 12 } }
+    var pmTimes: [String] { times.filter { hour(of: $0) >= 12 } }
+    
+    func hour(of time: String) -> Int {
+        Int(time.split(separator: ":").first ?? "0") ?? 0
+    }
+    
+    func displayTime(_ time: String) -> String {
+        guard let h = Int(time.split(separator: ":").first ?? ""),
+              let m = Int(time.split(separator: ":").last ?? "") else { return time }
+        let h12 = h == 0 ? 12 : (h > 12 ? h - 12 : h)
+        return String(format: "%d:%02d", h12, m)
     }
 }
+
