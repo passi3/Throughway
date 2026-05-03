@@ -9,8 +9,9 @@ import SwiftUI
 import FirebaseCore
 import FirebaseMessaging
 import UserNotifications
+import iamport_ios
 
-class AppDelegate: NSObject, UIApplicationDelegate {
+class AppDelegate: UIResponder, UIApplicationDelegate {
     func application(_ application: UIApplication,
                      didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey : Any]? = nil) -> Bool {
         FirebaseApp.configure()
@@ -34,6 +35,10 @@ class AppDelegate: NSObject, UIApplicationDelegate {
     func application(_ application: UIApplication, didFailToRegisterForRemoteNotificationsWithError error: Error) {
         print("Failed to register for remote notifications: \(error)")
     }
+    
+    func applicationWillTerminate(_ application: UIApplication) {
+        Iamport.shared.close()
+    }
 }
 
 extension AppDelegate: MessagingDelegate {
@@ -53,11 +58,11 @@ extension AppDelegate: UNUserNotificationCenterDelegate {
 @main
 struct ThroughwayApp: App {
     @UIApplicationDelegateAdaptor(AppDelegate.self) var delegate
-    @State private var loginViewModel = LoginViewModel(userAPIClient: .live)
+    @StateObject private var authViewModel = AuthViewModel()
     
     var body: some Scene {
         WindowGroup {
-            LoginView(viewModel: loginViewModel)
+            AuthView(viewModel: authViewModel)
         }
     }
 }
