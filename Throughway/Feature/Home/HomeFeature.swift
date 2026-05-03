@@ -13,7 +13,7 @@ enum HomeFeature {
         var geoPosts: [PostDTO] = []
         var isLoadingNewActivities: Bool = false
         var likeCountOverrides: [String: Int] = [:]
-        var distanceKm: Double = 100.0
+        var distanceKm: Double = 5.0
     }
 
     enum Intent: BaseIntent {
