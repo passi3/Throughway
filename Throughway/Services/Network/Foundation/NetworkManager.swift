@@ -94,6 +94,7 @@ private extension NetworkManager {
     static let authorizationMarkerHeader = "X-Requires-Authorization"
     static let newActivitiesPath = "/v1/activities/new"
     static let geolocationPostsPath = "/v1/posts/geolocation"
+    static let refreshPath = "/v1/auth/refresh"
 
     func buildURLRequest(from target: any TargetType) throws -> URLRequest {
         guard var components = URLComponents(string: target.baseURL + target.path) else {
@@ -161,7 +162,7 @@ private extension NetworkManager {
         switch statusCode {
         case 400:
             return .badRequest(parseMessage(from: data) ?? "필수값을 채워주세요.")
-        case 401:
+        case 401, 418, 419:
             return .unauthorized
         case 403:
             return .forbidden
@@ -247,24 +248,23 @@ private final class AuthInterceptor: RequestInterceptor, @unchecked Sendable {
             var request = urlRequest
             let requiresAuthorization = request.value(forHTTPHeaderField: NetworkManager.authorizationMarkerHeader) == "true"
             request.setValue(nil, forHTTPHeaderField: NetworkManager.authorizationMarkerHeader)
+            let isRefreshRequest = request.url?.path == NetworkManager.refreshPath
 
             if requiresAuthorization {
                 // 만료 1분 전이면 미리 갱신
                 if let token = await loadAccessToken(),
-                   let expiry = decodeJWTExpiry(token),
+                   !isRefreshRequest,
+                    let expiry = decodeJWTExpiry(token),
                    expiry.timeIntervalSinceNow < 60 {
-                    let isFirst = await coordinator.beginRefreshIfNeeded()
-                    if isFirst {
-                        if let refreshToken = await loadRefreshToken(),
-                           let tokens = try? await fetchNewTokens(using: refreshToken) {
-                            try? await saveTokens(tokens)
-                        }
-                        _ = await coordinator.finishRefresh(succeeded: true)
-                    } else {
-                        // 다른 요청이 이미 갱신 중 → 완료까지 대기
-                        await coordinator.waitForRefresh()
+                    switch await refreshTokens() {
+                    case .success(_), .transientFailure:
+                        break
+                    case .invalidSession:
+                        completion(.failure(NetworkError.unauthorized))
+                        return
                     }
                 }
+
                 if let token = await loadAccessToken() {
                     request.setValue(token, forHTTPHeaderField: "Authorization")
                 }
@@ -296,66 +296,107 @@ private final class AuthInterceptor: RequestInterceptor, @unchecked Sendable {
     ) {
         guard
             let statusCode = request.response?.statusCode,
-            statusCode == 401,
-            request.retryCount == 0
+            statusCode == 401 || statusCode == 419,
+            request.retryCount == 0,
+            request.request?.url?.path != NetworkManager.refreshPath
         else {
             completion(.doNotRetry)
             return
         }
 
         Task {
-            let isFirst = await coordinator.beginRefreshIfNeeded()
+            switch await refreshTokens() {
+            case .success(_):
+                completion(.retry)
+            case .invalidSession, .transientFailure:
+                completion(.doNotRetry)
+            }
+        }
+    }
 
-            if !isFirst {
-                // 이미 갱신 중 → 완료 후 같이 재시도
-                await coordinator.enqueue(completion)
-                return
+    private func refreshTokens() async -> RefreshResult {
+        await coordinator.refresh { [self] in
+            guard let refreshToken = await loadRefreshToken() else {
+                print("[Auth] 리프레시 토큰 없음")
+                await invalidateSession()
+                return .invalidSession
             }
 
-            do {
-                guard let refreshToken = await loadRefreshToken() else {
-                    throw NetworkError.unauthorized
+            switch await fetchNewTokens(using: refreshToken) {
+            case .success(let tokens):
+                do {
+                    try await saveTokens(tokens)
+                    return .success(tokens)
+                } catch {
+                    print("[Auth] 토큰 저장 실패: \(error)")
+                    return .transientFailure
                 }
-                let tokens = try await fetchNewTokens(using: refreshToken)
-                try await saveTokens(tokens)
-
-                let pending = await coordinator.finishRefresh(succeeded: true)
-                completion(.retry)
-                pending.forEach { $0(.retry) }
-            } catch {
+            case .invalidSession:
                 await invalidateSession()
-                let pending = await coordinator.finishRefresh(succeeded: false)
-                completion(.doNotRetry)
-                pending.forEach { $0(.doNotRetry) }
+                return .invalidSession
+            case .transientFailure:
+                return .transientFailure
             }
         }
     }
 
     // 별도 URLSession으로 토큰 갱신 (인터셉터 재진입 방지)
-    private func fetchNewTokens(using refreshToken: String) async throws -> AuthTokens {
+    private func fetchNewTokens(using refreshToken: String) async -> RefreshResult {
         let target = refreshTarget(refreshToken)
 
-        guard var components = URLComponents(string: target.baseURL + target.path),
+        guard let components = URLComponents(string: target.baseURL + target.path),
               let url = components.url else {
-            throw NetworkError.invalidURL
+            return .transientFailure
         }
 
         var urlRequest = URLRequest(url: url)
         urlRequest.httpMethod = target.method.rawValue
         target.headers.forEach { urlRequest.setValue($1, forHTTPHeaderField: $0) }
+        if target.requiresAuthorization,
+           let accessToken = await loadAccessToken() {
+            urlRequest.setValue(accessToken, forHTTPHeaderField: "Authorization")
+        }
 
         if case .json(let encodable) = target.body {
-            urlRequest.httpBody = try JSONEncoder().encode(encodable)
+            do {
+                urlRequest.httpBody = try JSONEncoder().encode(encodable)
+            } catch {
+                print("[Auth] 토큰 갱신 요청 인코딩 실패: \(error)")
+                return .transientFailure
+            }
         }
 
-        let (data, response) = try await URLSession.shared.data(for: urlRequest)
+        do {
+            let (data, response) = try await URLSession.shared.data(for: urlRequest)
 
-        guard let http = response as? HTTPURLResponse,
-              (200..<300).contains(http.statusCode) else {
-            throw NetworkError.unauthorized
+            guard let http = response as? HTTPURLResponse else {
+                print("[Auth] 토큰 갱신 응답 해석 실패")
+                return .transientFailure
+            }
+
+            switch http.statusCode {
+            case 200..<300:
+                do {
+                    let tokens = try JSONDecoder().decode(RefreshTokenResponseDTO.self, from: data).tokens
+                    print("[Auth] 토큰 갱신 성공")
+                    return .success(tokens)
+                } catch {
+                    print("[Auth] 토큰 갱신 응답 디코딩 실패: \(error)")
+                    return .transientFailure
+                }
+            case 401, 418:
+                let body = String(data: data, encoding: .utf8) ?? "<empty>"
+                print("[Auth] 토큰 갱신 세션 만료 (\(http.statusCode)): \(body)")
+                return .invalidSession
+            default:
+                let body = String(data: data, encoding: .utf8) ?? "<empty>"
+                print("[Auth] 토큰 갱신 일시 실패 (\(http.statusCode)): \(body)")
+                return .transientFailure
+            }
+        } catch {
+            print("[Auth] 토큰 갱신 네트워크 실패: \(error)")
+            return .transientFailure
         }
-
-        return try JSONDecoder().decode(RefreshTokenResponseDTO.self, from: data).tokens
     }
 
     private func invalidateSession() async {
@@ -367,38 +408,28 @@ private final class AuthInterceptor: RequestInterceptor, @unchecked Sendable {
 // MARK: - RefreshCoordinator (동시 401 처리)
 
 private actor RefreshCoordinator {
-    private var isRefreshing = false
-    private var pending: [(RetryResult) -> Void] = []
-    /// adapt()의 proactive refresh 대기자 (async/await 기반)
-    private var waiters: [CheckedContinuation<Void, Never>] = []
+    private var currentTask: Task<RefreshResult, Never>?
 
-    /// true → 이 호출이 갱신을 시작해야 함, false → 대기열에 추가
-    func beginRefreshIfNeeded() -> Bool {
-        if isRefreshing { return false }
-        isRefreshing = true
-        return true
-    }
-
-    /// retry() 전용: completion 기반 대기
-    func enqueue(_ completion: @escaping (RetryResult) -> Void) {
-        pending.append(completion)
-    }
-
-    /// adapt() 전용: 갱신 완료까지 suspend
-    func waitForRefresh() async {
-        await withCheckedContinuation { continuation in
-            waiters.append(continuation)
+    func refresh(_ operation: @escaping @Sendable () async -> RefreshResult) async -> RefreshResult {
+        if let currentTask {
+            return await currentTask.value
         }
-    }
 
-    func finishRefresh(succeeded: Bool) -> [(RetryResult) -> Void] {
-        isRefreshing = false
-        let waiting = pending
-        pending = []
-        waiters.forEach { $0.resume() }
-        waiters = []
-        return waiting
+        let task = Task {
+            await operation()
+        }
+        currentTask = task
+
+        let result = await task.value
+        currentTask = nil
+        return result
     }
+}
+
+private enum RefreshResult {
+    case success(AuthTokens)
+    case invalidSession
+    case transientFailure
 }
 
 // MARK: - Private DTO
