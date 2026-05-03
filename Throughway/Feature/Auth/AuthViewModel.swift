@@ -112,19 +112,28 @@ final class AuthViewModel: BaseViewModel<AuthFeature.State, AuthFeature.Intent> 
 
     /// 리프레시 토큰으로 새 액세스토큰 발급 시도
     /// - 성공: 키체인 저장 → authenticated
-    /// - 리프레시 토큰 없음 / 실패: 토큰 전체 삭제 → unauthenticated
+    /// - 세션 만료(401/418): 토큰 전체 삭제 → unauthenticated
+    /// - 일시 실패: access token 보유 시 authenticated 유지
     private func attemptSilentRefresh() async {
+        let hadAccessToken = await tokenClient.loadAccessToken() != nil
+
         guard let refreshToken = await tokenClient.loadRefreshToken() else {
-            reduce { $0.phase = .unauthenticated }
+            await tokenClient.clear()
+            resetToUnauthenticated()
             return
         }
+
         do {
             let dto = try await userAPIClient.refreshToken(refreshToken)
             try await tokenClient.save(dto.tokens)
             reduce { $0.phase = .authenticated }
         } catch {
-            await tokenClient.clear()
-            resetToUnauthenticated()
+            if isSessionInvalidationError(error) {
+                await tokenClient.clear()
+                resetToUnauthenticated()
+            } else {
+                reduce { $0.phase = hadAccessToken ? .authenticated : .unauthenticated }
+            }
         }
     }
 
@@ -186,5 +195,15 @@ final class AuthViewModel: BaseViewModel<AuthFeature.State, AuthFeature.Intent> 
 
     deinit {
         sessionMonitorTask?.cancel()
+    }
+}
+
+private extension AuthViewModel {
+    func isSessionInvalidationError(_ error: Error) -> Bool {
+        guard let networkError = error as? NetworkError else { return false }
+        if case .unauthorized = networkError {
+            return true
+        }
+        return false
     }
 }
