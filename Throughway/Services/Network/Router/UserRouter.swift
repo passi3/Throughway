@@ -62,7 +62,14 @@ extension UserRouter {
     }
 
     var headers: [String: String] {
-        defaultHeaders
+        switch self {
+        case .refreshToken(let dto):
+            var h = defaultHeaders
+            h["RefreshToken"] = dto.refreshToken
+            return h
+        default:
+            return defaultHeaders
+        }
     }
 
     var body: RequestBody {
@@ -72,7 +79,7 @@ extension UserRouter {
         case .login(let dto):             return .json(dto)
         case .kakaoLogin(let dto):        return .json(dto)
         case .appleLogin(let dto):        return .json(dto)
-        case .refreshToken(let dto):      return .json(dto)
+        case .refreshToken:               return .none
         case .updateDeviceToken(let dto): return .json(dto)
         case .updateMyProfile(let dto):   return .json(dto)
         case .uploadProfileImage(let data):
