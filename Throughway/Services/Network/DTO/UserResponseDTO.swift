@@ -70,7 +70,8 @@ nonisolated struct UserSummaryDTO: Decodable {
 }
 
 // 유저 검색 (채팅 대상 검색용, introduction 포함)
-nonisolated struct UserInfoResponseDTO: Decodable {
+nonisolated struct UserInfoResponseDTO: Decodable, Identifiable, Hashable {
+    var id: String { userId }
     let userId: String
     let nick: String
     let profileImage: String?

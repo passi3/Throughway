@@ -78,6 +78,15 @@ struct PostCreatorDTO: Decodable, Sendable {
     }
 }
 
+extension PostCreatorDTO {
+    var asUserInfo: UserInfoResponseDTO {
+        UserInfoResponseDTO(userId: userId,
+                            nick: nick,
+                            profileImage: profileImage,
+                            introduction: introduction)
+    }
+}
+
 struct PostListResponseDTO: Decodable, Sendable {
     let data: [PostDTO]
     let nextCursor: String?
