@@ -22,6 +22,8 @@ final class AuthViewModel: BaseViewModel<AuthFeature.State, AuthFeature.Intent> 
     private var sessionMonitorTask: Task<Void, Never>?
     /// start()가 완료되기 전에 foreground 이벤트가 오는 것을 방지
     @MainActor private var isStarted = false
+    /// 동시 리프레시 방지
+    @MainActor private var isRefreshing = false
 
     init(
         tokenClient: TokenClient = .live,
@@ -68,10 +70,29 @@ final class AuthViewModel: BaseViewModel<AuthFeature.State, AuthFeature.Intent> 
     }
 
     /// 앱이 suspend → foreground 복귀 시 호출
+    /// MainView를 유지한 채 토큰 갱신. 세션 만료 시에만 unauthenticated 전환.
     func handleForeground() async {
-        guard isStarted, state.phase != .loading else { return }
-        reduce { $0.phase = .loading }
-        await attemptSilentRefresh()
+        guard isStarted, state.phase == .authenticated, !isRefreshing else { return }
+        isRefreshing = true
+        defer { isRefreshing = false }
+
+        guard let refreshToken = await tokenClient.loadRefreshToken() else {
+            await tokenClient.clear()
+            resetToUnauthenticated()
+            return
+        }
+
+        do {
+            let dto = try await userAPIClient.refreshToken(refreshToken)
+            try await tokenClient.save(dto.tokens)
+        } catch {
+            if isSessionInvalidationError(error) {
+                await tokenClient.clear()
+                resetToUnauthenticated()
+            }
+            // 일시적 네트워크 오류: phase 변경 없이 authenticated 유지
+            // NetworkManager의 AuthInterceptor가 401 시 자동 갱신
+        }
     }
 
     // MARK: - Private
