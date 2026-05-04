@@ -14,6 +14,7 @@ final class ChatListViewModel: BaseViewModel<ChatListFeature.State, ChatListFeat
     private let tokenClient: TokenClient
     private let userClient: UserAPIClient
     private let chatRepo = ChatRepository()
+    private var listenTask: Task<Void, Never>?
 
     init(
         chatClient: ChatAPIClient = .live,
@@ -30,10 +31,17 @@ final class ChatListViewModel: BaseViewModel<ChatListFeature.State, ChatListFeat
         switch intent {
         case .onAppear:
             Task { await loadMyUserId() }
-            Task { await fetchRooms() }
+            Task { await fetchRoomsAndConnect() }
+
+        case .onDisappear:
+            listenTask?.cancel()
+            listenTask = nil
+            SocketIOManager.shared.disconnect()
 
         case .refresh:
-            Task { await fetchRooms() }
+            listenTask?.cancel()
+            listenTask = nil
+            Task { await fetchRoomsAndConnect() }
 
         case .roomTapped(let room):
             reduce { $0.selectedRoom = room }
@@ -58,7 +66,7 @@ final class ChatListViewModel: BaseViewModel<ChatListFeature.State, ChatListFeat
         }
     }
 
-    private func fetchRooms() async {
+    private func fetchRoomsAndConnect() async {
         reduce { $0.isLoading = true }
         defer { reduce { $0.isLoading = false } }
         do {
@@ -74,8 +82,28 @@ final class ChatListViewModel: BaseViewModel<ChatListFeature.State, ChatListFeat
                 $0.rooms = sorted
                 $0.roomLastMessages = localMap
             }
+
+            let roomIds = sorted.map { $0.roomId }
+            let token = await tokenClient.loadAccessToken() ?? ""
+            SocketIOManager.shared.connectAll(roomIds: roomIds, token: token)
+            listenTask = Task { await listenForMessages() }
         } catch {
             print("[ChatList] fetchRooms error:", error)
+        }
+    }
+
+    private func listenForMessages() async {
+        for await message in SocketIOManager.shared.incomingMessages {
+            guard !Task.isCancelled else { break }
+            chatRepo.save(message: message)
+            reduce { state in
+                state.roomLastMessages[message.roomId] = message
+                state.rooms = state.rooms.sorted { a, b in
+                    let dateA = state.roomLastMessages[a.roomId]?.createdAt ?? a.updatedAt
+                    let dateB = state.roomLastMessages[b.roomId]?.createdAt ?? b.updatedAt
+                    return dateA > dateB
+                }
+            }
         }
     }
 }

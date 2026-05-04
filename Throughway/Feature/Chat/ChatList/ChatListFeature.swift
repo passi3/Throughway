@@ -18,6 +18,7 @@ enum ChatListFeature {
 
     enum Intent: BaseIntent {
         case onAppear
+        case onDisappear
         case refresh
         case roomTapped(ChatRoomDTO)
         case clearSelection

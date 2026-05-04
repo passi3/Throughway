@@ -2,6 +2,8 @@
 //  SocketIOManager.swift
 //  Throughway
 //
+//  Created by passi on 5/4/26.
+//
 
 import Foundation
 import SocketIO
@@ -12,6 +14,7 @@ final class SocketIOManager {
 
     private var manager: SocketManager?
     private var socket: SocketIOClient?
+    private var sockets: [SocketIOClient] = []
     private var messageContinuation: AsyncStream<ChatMessageDTO>.Continuation?
 
     private(set) var incomingMessages: AsyncStream<ChatMessageDTO>
@@ -29,7 +32,26 @@ final class SocketIOManager {
 
         guard let baseURL = URL(string: Activity.url) else { return }
 
-        let namespace = "/chats-\(roomId)"
+        manager = SocketManager(
+            socketURL: baseURL,
+            config: [
+                .log(false),
+                .compress,
+                .extraHeaders([
+                    "SeSACKey": Activity.key,
+                    "Authorization": token
+                ])
+            ]
+        )
+
+        socket = manager?.socket(forNamespace: "/chats-\(roomId)")
+        registerHandlers(on: socket!)
+        socket?.connect()
+    }
+
+    func connectAll(roomIds: [String], token: String) {
+        disconnect()
+        guard !roomIds.isEmpty, let baseURL = URL(string: Activity.url) else { return }
 
         manager = SocketManager(
             socketURL: baseURL,
@@ -43,9 +65,12 @@ final class SocketIOManager {
             ]
         )
 
-        socket = manager?.socket(forNamespace: namespace)
-        registerHandlers()
-        socket?.connect()
+        sockets = roomIds.map { roomId in
+            let s = manager!.socket(forNamespace: "/chats-\(roomId)")
+            registerHandlers(on: s)
+            s.connect()
+            return s
+        }
     }
 
     // MARK: - Disconnect
@@ -53,25 +78,27 @@ final class SocketIOManager {
     func disconnect() {
         socket?.disconnect()
         socket = nil
+        sockets.forEach { $0.disconnect() }
+        sockets = []
         manager = nil
     }
 
     // MARK: - Handlers
 
-    private func registerHandlers() {
-        socket?.on(clientEvent: .connect) { data, _ in
+    private func registerHandlers(on socket: SocketIOClient) {
+        socket.on(clientEvent: .connect) { data, _ in
             print("[Socket] Connected", data)
         }
 
-        socket?.on(clientEvent: .disconnect) { data, _ in
+        socket.on(clientEvent: .disconnect) { data, _ in
             print("[Socket] Disconnected", data)
         }
 
-        socket?.on(clientEvent: .error) { data, _ in
+        socket.on(clientEvent: .error) { data, _ in
             print("[Socket] Error", data)
         }
 
-        socket?.on("chat") { [weak self] dataArray, _ in
+        socket.on("chat") { [weak self] dataArray, _ in
             guard let self,
                   let dict = dataArray.first as? [String: Any],
                   let message = ChatMessageDTO(socketPayload: dict) else { return }

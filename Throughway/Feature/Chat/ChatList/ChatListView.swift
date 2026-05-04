@@ -12,6 +12,8 @@ struct ChatListView: View {
     @StateObject private var viewModel = ChatListViewModel()
     @State private var isSearchPresented = false
     @State private var pendingRoom: ChatRoomDTO?
+    @State private var isActive = false
+    @Environment(\.scenePhase) private var scenePhase
 
     var body: some View {
         NavigationStack {
@@ -45,7 +47,18 @@ struct ChatListView: View {
                 ChatDetailView(room: room, myUserId: viewModel.state.myUserId)
             }
         }
-        .onAppear { viewModel.send(.onAppear) }
+        .onAppear {
+            isActive = true
+            viewModel.send(.onAppear)
+        }
+        .onDisappear {
+            isActive = false
+            viewModel.send(.onDisappear)
+        }
+        .onChange(of: scenePhase) { _, phase in
+            guard isActive, phase == .active else { return }
+            viewModel.send(.refresh)
+        }
         .fullScreenCover(isPresented: $isSearchPresented) {
             UserSearchView(myUserId: viewModel.state.myUserId) { room in
                 pendingRoom = room
@@ -103,7 +116,15 @@ private struct ChatRoomRowView: View {
     }
 
     private var lastContent: String {
-        localLastMessage?.content ?? room.lastChat?.content ?? ""
+        let msg = localLastMessage ?? room.lastChat
+        guard let msg else { return "" }
+        if !msg.content.isEmpty { return msg.content }
+        if !msg.files.isEmpty { return "📎 파일 \(msg.files.count)개" }
+        return ""
+    }
+
+    private var lastTime: String {
+        (localLastMessage?.createdAt ?? room.updatedAt).chatTimeLabel
     }
 
     var body: some View {
@@ -120,7 +141,7 @@ private struct ChatRoomRowView: View {
                     .lineLimit(1)
             }
             Spacer()
-            Text(room.updatedAt.chatTimeLabel)
+            Text(lastTime)
                 .font(.Pretendard.caption2)
                 .foregroundStyle(Color.gray45)
         }
