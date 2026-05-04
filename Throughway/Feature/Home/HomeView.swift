@@ -14,6 +14,8 @@ struct HomeView: View {
     @State private var selectedFlag: AppFlag = .korea
     @State private var hasSelectedCategoryFilter = false
     @State private var hasSelectedCountryFilter = false
+    @State private var selectedCreator: UserInfoResponseDTO? = nil
+    @State private var chatRoom: ChatRoomDTO? = nil
 
     private let categories = ["투어", "관광", "패키지", "익사이팅", "체험"]
     private let availableFlags: [AppFlag] = [.korea, .japan, .australia, .philippines, .thailand]
@@ -65,6 +67,19 @@ struct HomeView: View {
                         }
                     }
                 }
+            }
+            .navigationDestination(item: $selectedCreator) { creator in
+                UserProfileView(
+                    user: creator,
+                    myUserId: viewModel.state.myUserId,
+                    onChatReady: { room in
+                        selectedCreator = nil
+                        chatRoom = room
+                    }
+                )
+            }
+            .navigationDestination(item: $chatRoom) { room in
+                ChatDetailView(room: room, myUserId: viewModel.state.myUserId)
             }
         }
         .task {
@@ -344,31 +359,36 @@ private extension HomeView {
     func activityPost(_ post: PostDTO) -> some View {
         VStack(alignment: .leading, spacing: 12) {
             // Creator row
-            HStack(spacing: 10) {
-                KFImage(post.creator.profileImage.flatMap { $0.serverImageURL })
-                    .requestModifier(AuthImageModifier())
-                    .placeholder {
-                        Circle()
-                            .fill(Color.gray15)
-                            .overlay(Image(systemName: "person.fill").foregroundStyle(Color.gray45))
+            Button {
+                selectedCreator = post.creator.asUserInfo
+            } label: {
+                HStack(spacing: 10) {
+                    KFImage(post.creator.profileImage.flatMap { $0.serverImageURL })
+                        .requestModifier(AuthImageModifier())
+                        .placeholder {
+                            Circle()
+                                .fill(Color.gray15)
+                                .overlay(Image(systemName: "person.fill").foregroundStyle(Color.gray45))
+                        }
+                        .resizable()
+                        .scaledToFill()
+                        .frame(width: 36, height: 36)
+                        .clipShape(Circle())
+
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(post.creator.nick)
+                            .font(.Pretendard.body3)
+                            .fontWeight(.semibold)
+                            .foregroundStyle(Color.gray90)
+                        Text(relativeTime(from: post.createdAt))
+                            .font(.Pretendard.caption2)
+                            .foregroundStyle(Color.gray45)
                     }
-                    .resizable()
-                    .scaledToFill()
-                    .frame(width: 36, height: 36)
-                    .clipShape(Circle())
 
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(post.creator.nick)
-                        .font(.Pretendard.body3)
-                        .fontWeight(.semibold)
-                        .foregroundStyle(Color.gray90)
-                    Text(relativeTime(from: post.createdAt))
-                        .font(.Pretendard.caption2)
-                        .foregroundStyle(Color.gray45)
+                    Spacer()
                 }
-
-                Spacer()
             }
+            .buttonStyle(.plain)
 
             // Image grid
             postImageGrid(post)

@@ -14,6 +14,7 @@ enum HomeFeature {
         var isLoadingNewActivities: Bool = false
         var likeCountOverrides: [String: Int] = [:]
         var distanceKm: Double = 5.0
+        var myUserId: String = ""
     }
 
     enum Intent: BaseIntent {

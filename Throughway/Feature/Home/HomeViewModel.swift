@@ -16,6 +16,7 @@ final class HomeViewModel: BaseViewModel<HomeFeature.State, HomeFeature.Intent> 
 
     private let activityClient: ActivityAPIClient
     private let postClient: PostAPIClient
+    private let userClient: UserAPIClient
     private let locationManager = CLLocationManager()
     private var userLocation: CLLocation?
     private var fetchPostsTask: Task<Void, Never>?
@@ -23,10 +24,12 @@ final class HomeViewModel: BaseViewModel<HomeFeature.State, HomeFeature.Intent> 
 
     init(
         activityClient: ActivityAPIClient = .live,
-        postClient: PostAPIClient = .live
+        postClient: PostAPIClient = .live,
+        userClient: UserAPIClient = .live
     ) {
         self.activityClient = activityClient
         self.postClient = postClient
+        self.userClient = userClient
         super.init(initialState: .init())
         locationManager.delegate = self
         locationManager.desiredAccuracy = kCLLocationAccuracyHundredMeters
@@ -50,6 +53,7 @@ final class HomeViewModel: BaseViewModel<HomeFeature.State, HomeFeature.Intent> 
     }
 
     private func start() {
+        Task { await loadMyUserId() }
         let status = locationManager.authorizationStatus
         print("[Home] location authorization status: \(status.logDescription)")
 
@@ -62,6 +66,21 @@ final class HomeViewModel: BaseViewModel<HomeFeature.State, HomeFeature.Intent> 
             print("[Home] location access is unavailable")
         @unknown default:
             print("[Home] location authorization status is unknown")
+        }
+    }
+
+    private func loadMyUserId() async {
+        guard state.myUserId.isEmpty else { return }
+        if let cached = UserDefaults.standard.string(forKey: "myUserId"), !cached.isEmpty {
+            reduce { $0.myUserId = cached }
+            return
+        }
+        do {
+            let profile = try await userClient.fetchMyProfile()
+            UserDefaults.standard.set(profile.userId, forKey: "myUserId")
+            reduce { $0.myUserId = profile.userId }
+        } catch {
+            print("[Home] loadMyUserId error:", error)
         }
     }
 
