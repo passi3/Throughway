@@ -13,6 +13,7 @@ struct ProfileView: View {
     let onLogout: () -> Void
     @StateObject private var viewModel = ProfileViewModel()
     @State private var selectedPhoto: PhotosPickerItem?
+    @State private var cropUIImage: UIImage?
 
     private let columns = Array(repeating: GridItem(.flexible(), spacing: 2), count: 3)
 
@@ -43,17 +44,28 @@ struct ProfileView: View {
         .onChange(of: selectedPhoto) { _, item in
             guard let item else { return }
             Task {
-                if let data = try? await item.loadTransferable(type: Data.self) {
-                    let jpeg: Data
-                    if let image = UIImage(data: data),
-                       let compressed = image.jpegData(compressionQuality: 0.8) {
-                        jpeg = compressed
-                    } else {
-                        jpeg = data
-                    }
-                    viewModel.send(.profileImageSelected(jpeg))
+                if let data = try? await item.loadTransferable(type: Data.self),
+                   let image = UIImage(data: data) {
+                    cropUIImage = image.normalized()
                 }
                 selectedPhoto = nil
+            }
+        }
+        .fullScreenCover(isPresented: Binding(
+            get: { cropUIImage != nil },
+            set: { if !$0 { cropUIImage = nil } }
+        )) {
+            if let image = cropUIImage {
+                CircularCropView(
+                    image: image,
+                    onConfirm: { data in
+                        cropUIImage = nil
+                        viewModel.send(.profileImageSelected(data))
+                    },
+                    onCancel: {
+                        cropUIImage = nil
+                    }
+                )
             }
         }
         .sheet(isPresented: Binding(

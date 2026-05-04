@@ -86,14 +86,16 @@ final class ProfileViewModel: BaseViewModel<ProfileFeature.State, ProfileFeature
     }
 
     private func uploadProfileImage(_ data: Data) async {
-        guard data.count <= 1_048_576 else {
-            print("[Profile] 이미지가 1MB를 초과합니다")
-            return
-        }
         reduce { $0.isUploadingImage = true }
         defer { reduce { $0.isUploadingImage = false } }
         do {
-            _ = try await userClient.uploadProfileImage(data)
+            let imageResponse = try await userClient.uploadProfileImage(data)
+            _ = try await userClient.updateMyProfile(.init(
+                nick: nil,
+                phoneNum: nil,
+                introduction: nil,
+                profileImage: imageResponse.profileImage
+            ))
             await fetchProfile()
         } catch {
             print("[Profile] uploadProfileImage failed: \(error.localizedDescription)")
@@ -109,7 +111,7 @@ final class ProfileViewModel: BaseViewModel<ProfileFeature.State, ProfileFeature
         reduce { $0.isUpdatingNick = true }
         defer { reduce { $0.isUpdatingNick = false } }
         do {
-            _ = try await userClient.updateMyProfile(.init(nick: draft, phoneNum: nil, introduction: nil))
+            _ = try await userClient.updateMyProfile(.init(nick: draft, phoneNum: nil, introduction: nil, profileImage: nil))
             reduce { $0.isEditingNick = false; $0.nickError = nil }
             await fetchProfile()
         } catch {
