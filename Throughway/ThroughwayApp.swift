@@ -12,6 +12,7 @@ import UserNotifications
 import iamport_ios
 
 class AppDelegate: UIResponder, UIApplicationDelegate {
+    var pendingDeepLinkRoomId: String?
     func application(_ application: UIApplication,
                      didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey : Any]? = nil) -> Bool {
         FirebaseApp.configure()
@@ -50,14 +51,46 @@ extension AppDelegate: MessagingDelegate {
 }
 
 extension Notification.Name {
-    static let fcmTokenDidUpdate = Notification.Name("fcmTokenDidUpdate")
+    static let fcmTokenDidUpdate   = Notification.Name("fcmTokenDidUpdate")
+    static let chatRoomDeepLink    = Notification.Name("chatRoomDeepLink")
+    static let inAppChatBanner     = Notification.Name("inAppChatBanner")
 }
 
 extension AppDelegate: UNUserNotificationCenterDelegate {
     func userNotificationCenter(_ center: UNUserNotificationCenter,
                                 willPresent notification: UNNotification,
                                 withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void) {
-        completionHandler([.banner, .badge, .sound])
+        let content = notification.request.content
+        let userInfo = content.userInfo
+        let roomId = (userInfo["roomId"] ?? userInfo["room_id"]) as? String
+        if let roomId {
+            DispatchQueue.main.async {
+                NotificationCenter.default.post(
+                    name: .inAppChatBanner,
+                    object: nil,
+                    userInfo: [
+                        "title":  content.title,
+                        "body":   content.body,
+                        "roomId": roomId
+                    ]
+                )
+            }
+        }
+        completionHandler([.badge, .sound])
+    }
+
+    func userNotificationCenter(_ center: UNUserNotificationCenter,
+                                didReceive response: UNNotificationResponse,
+                                withCompletionHandler completionHandler: @escaping () -> Void) {
+        let userInfo = response.notification.request.content.userInfo
+        let roomId = (userInfo["roomId"] ?? userInfo["room_id"]) as? String
+        if let roomId {
+            pendingDeepLinkRoomId = roomId
+            DispatchQueue.main.async {
+                NotificationCenter.default.post(name: .chatRoomDeepLink, object: roomId)
+            }
+        }
+        completionHandler()
     }
 }
 
