@@ -2,6 +2,8 @@
 //  ChatDetailViewModel.swift
 //  Throughway
 //
+//  Created by passi on 5/2/26.
+//
 
 import Foundation
 
@@ -42,12 +44,18 @@ final class ChatDetailViewModel: BaseViewModel<ChatDetailFeature.State, ChatDeta
 
         case .sendTapped:
             Task { await sendMessage() }
+
+        case .dismissProfileUpdate:
+            reduce { $0.updatedOpponentProfile = nil }
         }
     }
 
     // MARK: - Bootstrap: 로컬 DB → 서버 동기화 → 소켓 연결
 
     private func bootstrap() async {
+        // 0. 프로필 변경 감지
+        checkProfileUpdate()
+
         // 1. 로컬 DB 조회
         let local = chatRepo.fetchMessages(roomId: room.roomId)
         reduce { $0.messages = local }
@@ -72,6 +80,20 @@ final class ChatDetailViewModel: BaseViewModel<ChatDetailFeature.State, ChatDeta
         let token = await tokenClient.loadAccessToken() ?? ""
         SocketIOManager.shared.connect(roomId: room.roomId, token: token)
         listenTask = Task { await listenForMessages() }
+    }
+
+    // MARK: - 프로필 변경 감지
+
+    private func checkProfileUpdate() {
+        guard let opponent = room.participants.first(where: { $0.userId != state.myUserId }) else { return }
+        let cacheKey = "profileImage_\(opponent.userId)"
+        let currentImage = opponent.profileImage ?? ""
+        let cachedImage = UserDefaults.standard.string(forKey: cacheKey)
+
+        if let cachedImage, cachedImage != currentImage {
+            reduce { $0.updatedOpponentProfile = opponent }
+        }
+        UserDefaults.standard.set(currentImage, forKey: cacheKey)
     }
 
     // MARK: - 실시간 메시지 수신
