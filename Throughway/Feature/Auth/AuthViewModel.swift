@@ -80,6 +80,7 @@ final class AuthViewModel: BaseViewModel<AuthFeature.State, AuthFeature.Intent> 
         isStarted = false
         await loadSession()
         startMonitoringSession()
+        startMonitoringFCMToken()
         isStarted = true
     }
 
@@ -143,6 +144,7 @@ final class AuthViewModel: BaseViewModel<AuthFeature.State, AuthFeature.Intent> 
             // access token 존재 → 낙관적으로 authenticated
             // 만료된 경우 NetworkManager의 AuthInterceptor가 401 시 자동 갱신
             reduce { $0.phase = .authenticated }
+            registerDeviceToken()
         } else {
             await attemptSilentRefresh()
         }
@@ -153,6 +155,28 @@ final class AuthViewModel: BaseViewModel<AuthFeature.State, AuthFeature.Intent> 
         sessionMonitorTask = Task { [weak self] in
             for await _ in NotificationCenter.default.notifications(named: Notification.Name("sessionDidInvalidate")) {
                 self?.handleSessionInvalidated()
+            }
+        }
+    }
+
+    private func startMonitoringFCMToken() {
+        Task { [weak self] in
+            for await notification in NotificationCenter.default.notifications(named: .fcmTokenDidUpdate) {
+                guard self?.state.phase == .authenticated else { continue }
+                self?.registerDeviceToken()
+                _ = notification
+            }
+        }
+    }
+
+    private func registerDeviceToken() {
+        guard let token = UserDefaults.standard.string(forKey: "fcmToken"), !token.isEmpty else { return }
+        Task {
+            do {
+                try await userAPIClient.updateDeviceToken(token)
+                print("[Auth] Device token registered")
+            } catch {
+                print("[Auth] Device token registration failed:", error)
             }
         }
     }
@@ -171,6 +195,7 @@ final class AuthViewModel: BaseViewModel<AuthFeature.State, AuthFeature.Intent> 
             }
             signUpViewModel = nil
             loginViewModel.send(.reset)
+            registerDeviceToken()
         } catch {
             reduce { $0.phase = .unauthenticated }
         }

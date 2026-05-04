@@ -43,8 +43,14 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
 
 extension AppDelegate: MessagingDelegate {
     func messaging(_ messaging: Messaging, didReceiveRegistrationToken fcmToken: String?) {
-        print("FCM token: \(fcmToken ?? "nil")")
+        guard let fcmToken else { return }
+        UserDefaults.standard.set(fcmToken, forKey: "fcmToken")
+        NotificationCenter.default.post(name: .fcmTokenDidUpdate, object: fcmToken)
     }
+}
+
+extension Notification.Name {
+    static let fcmTokenDidUpdate = Notification.Name("fcmTokenDidUpdate")
 }
 
 extension AppDelegate: UNUserNotificationCenterDelegate {
