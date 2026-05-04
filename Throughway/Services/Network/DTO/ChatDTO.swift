@@ -140,6 +140,10 @@ struct SendMessageRequestDTO: Encodable {
     let files: [String]
 }
 
+struct ChatUploadFilesResponseDTO: Decodable, Sendable {
+    let files: [String]
+}
+
 // MARK: - Decode Helpers
 
 private extension KeyedDecodingContainer {
