@@ -14,18 +14,21 @@ final class UserProfileViewModel: BaseViewModel<UserProfileFeature.State, UserPr
     private let myUserId: String
     private let chatAPIClient: ChatAPIClient
     private let postAPIClient: PostAPIClient
+    private let activityAPIClient: ActivityAPIClient
     var onChatReady: ((ChatRoomDTO) -> Void)?
 
     init(
         user: UserInfoResponseDTO,
         myUserId: String,
         chatAPIClient: ChatAPIClient = .live,
-        postAPIClient: PostAPIClient = .live
+        postAPIClient: PostAPIClient = .live,
+        activityAPIClient: ActivityAPIClient = .live
     ) {
         self.user = user
         self.myUserId = myUserId
         self.chatAPIClient = chatAPIClient
         self.postAPIClient = postAPIClient
+        self.activityAPIClient = activityAPIClient
         super.init(initialState: .init())
     }
 
@@ -33,6 +36,9 @@ final class UserProfileViewModel: BaseViewModel<UserProfileFeature.State, UserPr
         switch intent {
         case .onAppear:
             Task { await fetchUserPosts() }
+            Task { await fetchUserReviews() }
+        case .tabChanged(let tab):
+            reduce { $0.selectedTab = tab }
         case .chatTapped:
             Task { await createOrGetRoom() }
         }
@@ -46,6 +52,17 @@ final class UserProfileViewModel: BaseViewModel<UserProfileFeature.State, UserPr
             reduce { $0.posts = result.data }
         } catch {
             print("[UserProfile] fetchUserPosts failed: \(error.localizedDescription)")
+        }
+    }
+
+    private func fetchUserReviews() async {
+        reduce { $0.isLoadingReviews = true }
+        defer { reduce { $0.isLoadingReviews = false } }
+        do {
+            let result = try await activityAPIClient.fetchUserReviews(user.userId)
+            reduce { $0.reviews = result.data }
+        } catch {
+            print("[UserProfile] fetchUserReviews failed: \(error.localizedDescription)")
         }
     }
 

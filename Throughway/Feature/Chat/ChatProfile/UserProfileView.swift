@@ -30,7 +30,10 @@ struct UserProfileView: View {
                 Divider()
                     .foregroundStyle(Color.gray15)
 
-                postGrid
+                tabBar
+                    .padding(.top, 4)
+
+                tabContent
             }
         }
         .background(Color.gray0)
@@ -108,6 +111,47 @@ struct UserProfileView: View {
         .disabled(viewModel.state.isCreatingRoom)
     }
 
+    // MARK: - Tab Bar
+
+    private var tabBar: some View {
+        HStack(spacing: 0) {
+            tabBarItem(tab: .posts, icon: "square.grid.3x3.fill")
+            tabBarItem(tab: .reviews, icon: "star.fill")
+        }
+    }
+
+    private func tabBarItem(tab: UserProfileFeature.Tab, icon: String) -> some View {
+        let isSelected = viewModel.state.selectedTab == tab
+        return Button {
+            viewModel.send(.tabChanged(tab))
+        } label: {
+            VStack(spacing: 0) {
+                Image(systemName: icon)
+                    .font(.system(size: 18))
+                    .foregroundStyle(isSelected ? Color.blackSeafoam : Color.gray30)
+                    .frame(height: 40)
+
+                Rectangle()
+                    .fill(isSelected ? Color.blackSeafoam : Color.clear)
+                    .frame(height: 2)
+            }
+        }
+        .frame(maxWidth: .infinity)
+        .buttonStyle(.plain)
+    }
+
+    // MARK: - Tab Content
+
+    @ViewBuilder
+    private var tabContent: some View {
+        switch viewModel.state.selectedTab {
+        case .posts:
+            postGrid
+        case .reviews:
+            reviewGrid
+        }
+    }
+
     // MARK: - Post Grid
 
     @ViewBuilder
@@ -117,29 +161,65 @@ struct UserProfileView: View {
                 .frame(maxWidth: .infinity)
                 .padding(.top, 60)
         } else if viewModel.state.posts.isEmpty {
-            VStack(spacing: 12) {
-                Image(systemName: "photo.on.rectangle.angled")
-                    .font(.system(size: 40))
-                    .foregroundStyle(Color.gray30)
-                Text("게시물이 없습니다")
-                    .font(.Pretendard.body3)
-                    .foregroundStyle(Color.gray45)
-            }
-            .frame(maxWidth: .infinity)
-            .padding(.top, 60)
+            emptyView(text: "작성한 게시물이 없습니다", icon: "photo.on.rectangle.angled")
         } else {
             LazyVGrid(columns: columns, spacing: 2) {
                 ForEach(viewModel.state.posts, id: \.postId) { post in
-                    postThumbnail(post)
+                    gridThumbnail(
+                        imageURL: post.files.first?.serverImageURL,
+                        hasMultiple: post.files.count > 1
+                    )
                 }
             }
+            .padding(.top, 2)
         }
     }
 
-    private func postThumbnail(_ post: PostDTO) -> some View {
+    // MARK: - Review Grid
+
+    @ViewBuilder
+    private var reviewGrid: some View {
+        if viewModel.state.isLoadingReviews {
+            ProgressView()
+                .frame(maxWidth: .infinity)
+                .padding(.top, 60)
+        } else if viewModel.state.reviews.isEmpty {
+            emptyView(text: "작성한 리뷰가 없습니다", icon: "star.slash")
+        } else {
+            LazyVGrid(columns: columns, spacing: 2) {
+                ForEach(viewModel.state.reviews, id: \.activityId) { activity in
+                    gridThumbnail(
+                        imageURL: activity.thumbnails.first?.serverImageURL,
+                        hasMultiple: false
+                    )
+                    .overlay(alignment: .bottomLeading) {
+                        Text(activity.title)
+                            .font(.Pretendard.caption2)
+                            .fontWeight(.semibold)
+                            .foregroundStyle(Color.gray0)
+                            .lineLimit(2)
+                            .padding(6)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .background(
+                                LinearGradient(
+                                    colors: [.clear, .black.opacity(0.55)],
+                                    startPoint: .top,
+                                    endPoint: .bottom
+                                )
+                            )
+                    }
+                }
+            }
+            .padding(.top, 2)
+        }
+    }
+
+    // MARK: - Shared
+
+    private func gridThumbnail(imageURL: URL?, hasMultiple: Bool) -> some View {
         GeometryReader { geo in
             Group {
-                if let first = post.files.first, let url = first.serverImageURL {
+                if let url = imageURL {
                     KFImage(url)
                         .setProcessor(DownsamplingImageProcessor(size: CGSize(width: 200, height: 200)))
                         .requestModifier(AuthImageModifier())
@@ -158,7 +238,7 @@ struct UserProfileView: View {
             .frame(width: geo.size.width, height: geo.size.width)
             .clipped()
             .overlay(alignment: .topTrailing) {
-                if post.files.count > 1 {
+                if hasMultiple {
                     Image(systemName: "square.on.square")
                         .font(.system(size: 12))
                         .foregroundStyle(Color.gray0)
@@ -168,5 +248,18 @@ struct UserProfileView: View {
             }
         }
         .aspectRatio(1, contentMode: .fit)
+    }
+
+    private func emptyView(text: String, icon: String) -> some View {
+        VStack(spacing: 12) {
+            Image(systemName: icon)
+                .font(.system(size: 40))
+                .foregroundStyle(Color.gray30)
+            Text(text)
+                .font(.Pretendard.body3)
+                .foregroundStyle(Color.gray45)
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.top, 60)
     }
 }
