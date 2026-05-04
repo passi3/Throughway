@@ -205,6 +205,7 @@ final class AuthViewModel: BaseViewModel<AuthFeature.State, AuthFeature.Intent> 
     private func _logout() async {
         reduce { $0.phase = .loading }
         do { try await userAPIClient.logout() } catch {}
+        ChatRepository().deleteAll()
         await tokenClient.clear()
         resetToUnauthenticated()
     }

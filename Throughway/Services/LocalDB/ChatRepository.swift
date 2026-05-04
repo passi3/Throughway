@@ -54,4 +54,10 @@ final class ChatRepository {
             realm.add(message.toObject(), update: .modified)
         }
     }
+
+    func deleteAll() {
+        try? realm.write {
+            realm.deleteAll()
+        }
+    }
 }
