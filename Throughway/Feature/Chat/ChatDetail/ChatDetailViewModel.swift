@@ -47,6 +47,15 @@ final class ChatDetailViewModel: BaseViewModel<ChatDetailFeature.State, ChatDeta
 
         case .dismissProfileUpdate:
             reduce { $0.updatedOpponentProfile = nil }
+
+        case .filesPicked(let results):
+            handleFilesPicked(results)
+
+        case .removePendingFile(let id):
+            reduce { $0.pendingFiles.removeAll { $0.id == id } }
+
+        case .dismissFileUploadError:
+            reduce { $0.fileUploadError = nil }
         }
     }
 
@@ -108,18 +117,48 @@ final class ChatDetailViewModel: BaseViewModel<ChatDetailFeature.State, ChatDeta
         }
     }
 
+    // MARK: - 파일 선택 처리
+
+    private func handleFilesPicked(_ results: [PendingFilePickResult]) {
+        let remaining = max(0, 5 - state.pendingFiles.count)
+        guard remaining > 0 else { return }
+        let newFiles: [PendingFile] = results.prefix(remaining).compactMap { r in
+            guard r.data.count <= 5 * 1024 * 1024 else { return nil }
+            return PendingFile(id: UUID(), data: r.data, fileName: r.fileName, mimeType: Self.mimeType(for: r.ext))
+        }
+        reduce { $0.pendingFiles.append(contentsOf: newFiles) }
+    }
+
+    private static func mimeType(for ext: String) -> String {
+        switch ext.lowercased() {
+        case "jpg", "jpeg": return "image/jpeg"
+        case "png":         return "image/png"
+        case "gif":         return "image/gif"
+        case "pdf":         return "application/pdf"
+        default:            return "application/octet-stream"
+        }
+    }
+
     // MARK: - 채팅 전송
 
     private func sendMessage() async {
         let content = state.inputText.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !content.isEmpty, !state.isSending else { return }
+        let files = state.pendingFiles
+        guard !content.isEmpty || !files.isEmpty else { return }
+        guard !state.isSending else { return }
 
         reduce { $0.inputText = "" }
+        reduce { $0.pendingFiles = [] }
         reduce { $0.isSending = true }
         defer { reduce { $0.isSending = false } }
 
         do {
-            let dto = SendMessageRequestDTO(content: content, files: [])
+            var fileURLs: [String] = []
+            if !files.isEmpty {
+                let response = try await chatClient.uploadFiles(room.roomId, files)
+                fileURLs = response.files
+            }
+            let dto = SendMessageRequestDTO(content: content, files: fileURLs)
             let sent = try await chatClient.sendMessage(room.roomId, dto)
             // 소켓 echo와 중복되지 않으면 추가
             if !state.messages.contains(where: { $0.chatId == sent.chatId }) {
@@ -129,6 +168,8 @@ final class ChatDetailViewModel: BaseViewModel<ChatDetailFeature.State, ChatDeta
         } catch {
             print("[ChatDetail] sendMessage error:", error)
             reduce { $0.inputText = content }
+            reduce { $0.pendingFiles = files }
+            reduce { $0.fileUploadError = "파일 전송에 실패했습니다." }
         }
     }
 }

@@ -7,10 +7,13 @@
 
 import SwiftUI
 import Kingfisher
+import UniformTypeIdentifiers
+import UIKit
 
 struct ChatDetailView: View {
     @StateObject private var viewModel: ChatDetailViewModel
     private let room: ChatRoomDTO
+    @State private var showFilePicker = false
 
     init(room: ChatRoomDTO, myUserId: String) {
         self.room = room
@@ -38,6 +41,32 @@ struct ChatDetailView: View {
         .background(Color.gray0)
         .task { viewModel.send(.onAppear) }
         .onDisappear { viewModel.send(.onDisappear) }
+        .fileImporter(
+            isPresented: $showFilePicker,
+            allowedContentTypes: [.jpeg, .png, .gif, .pdf],
+            allowsMultipleSelection: true
+        ) { result in
+            guard case .success(let urls) = result else { return }
+            let picked = urls.compactMap { url -> PendingFilePickResult? in
+                guard url.startAccessingSecurityScopedResource() else { return nil }
+                defer { url.stopAccessingSecurityScopedResource() }
+                guard let data = try? Data(contentsOf: url) else { return nil }
+                return PendingFilePickResult(data: data, fileName: url.lastPathComponent, ext: url.pathExtension)
+            }
+            viewModel.send(.filesPicked(picked))
+        }
+        .alert(
+            "오류",
+            isPresented: Binding(
+                get: { viewModel.state.fileUploadError != nil },
+                set: { if !$0 { viewModel.send(.dismissFileUploadError) } }
+            ),
+            presenting: viewModel.state.fileUploadError
+        ) { _ in
+            Button("확인") { viewModel.send(.dismissFileUploadError) }
+        } message: { msg in
+            Text(msg)
+        }
     }
 
     // MARK: - Message List
@@ -101,41 +130,73 @@ struct ChatDetailView: View {
     // MARK: - Input Bar
 
     private var inputBar: some View {
-        HStack(spacing: 12) {
-            TextField("메시지 입력...", text: Binding(
-                get: { viewModel.state.inputText },
-                set: { viewModel.send(.inputChanged($0)) }
-            ), axis: .vertical)
-            .lineLimit(1...3)
-            .submitLabel(.send)
-            .onSubmit { viewModel.send(.sendTapped) }
-            .font(.Pretendard.body2)
-            .padding(.horizontal, 12)
-            .padding(.vertical, 8)
-            .background(Color.gray15)
-            .clipShape(RoundedRectangle(cornerRadius: 20))
-
-            Button {
-                viewModel.send(.sendTapped)
-            } label: {
-                Image(systemName: "paperplane.fill")
-                    .font(.system(size: 20))
-                    .foregroundStyle(
-                        viewModel.state.inputText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || viewModel.state.isSending
-                        ? Color.gray30
-                        : Color.blackSeafoam
-                    )
+        VStack(spacing: 0) {
+            if !viewModel.state.pendingFiles.isEmpty {
+                filePreviewStrip
+                    .padding(.horizontal, 16)
+                    .padding(.top, 8)
             }
-            .disabled(
-                viewModel.state.inputText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ||
-                viewModel.state.isSending
-            )
+            HStack(spacing: 12) {
+                Button {
+                    showFilePicker = true
+                } label: {
+                    Image(systemName: "paperclip")
+                        .font(.system(size: 20))
+                        .foregroundStyle(Color.gray60)
+                }
+                .disabled(viewModel.state.pendingFiles.count >= 5)
+
+                TextField("메시지 입력...", text: Binding(
+                    get: { viewModel.state.inputText },
+                    set: { viewModel.send(.inputChanged($0)) }
+                ), axis: .vertical)
+                .lineLimit(1...3)
+                .submitLabel(.send)
+                .onSubmit { viewModel.send(.sendTapped) }
+                .font(.Pretendard.body2)
+                .padding(.horizontal, 12)
+                .padding(.vertical, 8)
+                .background(Color.gray15)
+                .clipShape(RoundedRectangle(cornerRadius: 20))
+
+                Button {
+                    viewModel.send(.sendTapped)
+                } label: {
+                    Image(systemName: "paperplane.fill")
+                        .font(.system(size: 20))
+                        .foregroundStyle(
+                            (viewModel.state.inputText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+                             && viewModel.state.pendingFiles.isEmpty)
+                            || viewModel.state.isSending
+                            ? Color.gray30
+                            : Color.blackSeafoam
+                        )
+                }
+                .disabled(
+                    (viewModel.state.inputText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+                     && viewModel.state.pendingFiles.isEmpty)
+                    || viewModel.state.isSending
+                )
+            }
+            .padding(.horizontal, 16)
+            .padding(.vertical, 12)
         }
-        .padding(.horizontal, 16)
-        .padding(.vertical, 12)
         .background(Color.gray0)
         .overlay(alignment: .top) {
             Divider()
+        }
+    }
+
+    private var filePreviewStrip: some View {
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: 8) {
+                ForEach(viewModel.state.pendingFiles) { file in
+                    PendingFileChip(file: file) {
+                        viewModel.send(.removePendingFile(file.id))
+                    }
+                }
+            }
+            .padding(.bottom, 8)
         }
     }
 }
@@ -273,19 +334,25 @@ private struct MessageBubbleView: View {
     }
 
     private var bubble: some View {
-        VStack(alignment: isOwn ? .trailing : .leading, spacing: 4) {
-            Text(displayContent)
-                .font(.Pretendard.body2)
-                .foregroundStyle(isOwn ? .white : Color.gray90)
+        VStack(alignment: isOwn ? .trailing : .leading, spacing: 6) {
+            if !message.files.isEmpty {
+                filesGrid
+            }
 
-            if isLong {
-                Button {
-                    isExpanded.toggle()
-                } label: {
-                    Text(isExpanded ? "접기" : "더보기")
-                        .font(.Pretendard.caption1)
-                        .fontWeight(.semibold)
-                        .foregroundStyle(isOwn ? Color.white.opacity(0.75) : Color.blackSeafoam)
+            if !message.content.isEmpty {
+                Text(displayContent)
+                    .font(.Pretendard.body2)
+                    .foregroundStyle(isOwn ? .white : Color.gray90)
+
+                if isLong {
+                    Button {
+                        isExpanded.toggle()
+                    } label: {
+                        Text(isExpanded ? "접기" : "더보기")
+                            .font(.Pretendard.caption1)
+                            .fontWeight(.semibold)
+                            .foregroundStyle(isOwn ? Color.white.opacity(0.75) : Color.blackSeafoam)
+                    }
                 }
             }
         }
@@ -293,6 +360,44 @@ private struct MessageBubbleView: View {
         .padding(.vertical, 8)
         .background(isOwn ? Color.blackSeafoam : Color.gray15)
         .clipShape(RoundedRectangle(cornerRadius: 16))
+    }
+
+    private var filesGrid: some View {
+        let imageFiles = message.files.filter { !$0.lowercased().hasSuffix(".pdf") }
+        let pdfFiles   = message.files.filter {  $0.lowercased().hasSuffix(".pdf") }
+        let columns    = [GridItem(.flexible()), GridItem(.flexible())]
+
+        return VStack(alignment: isOwn ? .trailing : .leading, spacing: 4) {
+            if !imageFiles.isEmpty {
+                LazyVGrid(columns: columns, spacing: 4) {
+                    ForEach(imageFiles, id: \.self) { path in
+                        if let url = path.serverImageURL {
+                            KFImage(url)
+                                .requestModifier(AuthImageModifier())
+                                .resizable()
+                                .scaledToFill()
+                                .frame(width: 100, height: 100)
+                                .clipShape(RoundedRectangle(cornerRadius: 8))
+                        }
+                    }
+                }
+            }
+
+            ForEach(pdfFiles, id: \.self) { path in
+                HStack(spacing: 6) {
+                    Image(systemName: "doc.fill")
+                        .foregroundStyle(isOwn ? .white : Color.gray60)
+                    Text((path as NSString).lastPathComponent)
+                        .font(.Pretendard.caption1)
+                        .foregroundStyle(isOwn ? .white : Color.gray90)
+                        .lineLimit(1)
+                }
+                .padding(.horizontal, 8)
+                .padding(.vertical, 4)
+                .background(isOwn ? Color.white.opacity(0.15) : Color.gray15)
+                .clipShape(RoundedRectangle(cornerRadius: 6))
+            }
+        }
     }
 
     private var timeLabel: some View {
@@ -328,6 +433,47 @@ private struct MessageBubbleView: View {
             } else {
                 Color.clear.frame(width: 32, height: 1)
             }
+        }
+    }
+}
+
+// MARK: - Pending File Chip
+
+private struct PendingFileChip: View {
+    let file: PendingFile
+    let onRemove: () -> Void
+
+    var body: some View {
+        ZStack(alignment: .topTrailing) {
+            if file.mimeType.hasPrefix("image/"), let uiImage = UIImage(data: file.data) {
+                Image(uiImage: uiImage)
+                    .resizable()
+                    .scaledToFill()
+                    .frame(width: 64, height: 64)
+                    .clipShape(RoundedRectangle(cornerRadius: 8))
+            } else {
+                VStack(spacing: 4) {
+                    Image(systemName: "doc.fill")
+                        .font(.system(size: 24))
+                        .foregroundStyle(Color.gray60)
+                    Text(file.fileName)
+                        .font(.Pretendard.caption2)
+                        .foregroundStyle(Color.gray60)
+                        .lineLimit(2)
+                        .multilineTextAlignment(.center)
+                }
+                .frame(width: 64, height: 64)
+                .background(Color.gray15)
+                .clipShape(RoundedRectangle(cornerRadius: 8))
+            }
+
+            Button(action: onRemove) {
+                Image(systemName: "xmark.circle.fill")
+                    .font(.system(size: 16))
+                    .foregroundStyle(Color.gray90)
+                    .background(Color.gray0, in: Circle())
+            }
+            .offset(x: 6, y: -6)
         }
     }
 }
