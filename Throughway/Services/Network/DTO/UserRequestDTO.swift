@@ -45,4 +45,5 @@ struct UpdateProfileRequestDTO: Encodable {
     let nick: String?
     let phoneNum: String?
     let introduction: String?
+    let profileImage: String?
 }
