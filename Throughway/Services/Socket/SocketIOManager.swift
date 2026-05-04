@@ -15,39 +15,55 @@ final class SocketIOManager {
     private var manager: SocketManager?
     private var socket: SocketIOClient?
     private var sockets: [SocketIOClient] = []
-    private var messageContinuation: AsyncStream<ChatMessageDTO>.Continuation?
 
-    private(set) var incomingMessages: AsyncStream<ChatMessageDTO>
+    /// 브로드캐스트: 여러 소비자가 동시에 메시지를 받을 수 있도록 continuation 목록 관리
+    private var continuations: [UUID: AsyncStream<ChatMessageDTO>.Continuation] = [:]
 
-    private init() {
-        var continuation: AsyncStream<ChatMessageDTO>.Continuation!
-        incomingMessages = AsyncStream { continuation = $0 }
-        messageContinuation = continuation
+    private init() {}
+
+    // MARK: - Stream (broadcast)
+
+    /// 호출할 때마다 독립적인 AsyncStream을 반환. 각 소비자가 모든 메시지를 받음.
+    func messageStream() -> AsyncStream<ChatMessageDTO> {
+        let id = UUID()
+        return AsyncStream { continuation in
+            self.continuations[id] = continuation
+            continuation.onTermination = { _ in
+                Task { @MainActor in
+                    self.continuations.removeValue(forKey: id)
+                }
+            }
+        }
     }
 
-    // MARK: - Connect
+    // MARK: - Connect (single room — ChatDetail용)
 
     func connect(roomId: String, token: String) {
-        disconnect()
+        disconnectSingle()
 
         guard let baseURL = URL(string: Activity.url) else { return }
 
-        manager = SocketManager(
-            socketURL: baseURL,
-            config: [
-                .log(false),
-                .compress,
-                .extraHeaders([
-                    "SeSACKey": Activity.key,
-                    "Authorization": token
-                ])
-            ]
-        )
+        // connectAll로 이미 SocketManager가 있으면 재사용
+        if manager == nil {
+            manager = SocketManager(
+                socketURL: baseURL,
+                config: [
+                    .log(false),
+                    .compress,
+                    .extraHeaders([
+                        "SeSACKey": Activity.key,
+                        "Authorization": token
+                    ])
+                ]
+            )
+        }
 
         socket = manager?.socket(forNamespace: "/chats-\(roomId)")
         registerHandlers(on: socket!)
         socket?.connect()
     }
+
+    // MARK: - Connect All (ChatList용)
 
     func connectAll(roomIds: [String], token: String) {
         disconnect()
@@ -75,6 +91,13 @@ final class SocketIOManager {
 
     // MARK: - Disconnect
 
+    /// 단일 소켓만 해제 (ChatDetail pop 시)
+    func disconnectSingle() {
+        socket?.disconnect()
+        socket = nil
+    }
+
+    /// 전체 해제 (ChatList onDisappear / 로그아웃 시)
     func disconnect() {
         socket?.disconnect()
         socket = nil
@@ -102,7 +125,9 @@ final class SocketIOManager {
             guard let self,
                   let dict = dataArray.first as? [String: Any],
                   let message = ChatMessageDTO(socketPayload: dict) else { return }
-            self.messageContinuation?.yield(message)
+            for continuation in self.continuations.values {
+                continuation.yield(message)
+            }
         }
     }
 }
