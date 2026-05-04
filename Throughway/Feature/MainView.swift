@@ -12,6 +12,8 @@ struct MainView: View {
     @State private var selectedTab: Int = 0
     @State private var banner: ChatBannerInfo? = nil
     @State private var bannerTask: Task<Void, Never>? = nil
+    @State private var deepLinkRoomId: String? = nil
+    @Environment(\.scenePhase) private var scenePhase
 
     var body: some View {
         TabView(selection: $selectedTab) {
@@ -27,7 +29,7 @@ struct MainView: View {
                 }
                 .tag(1)
 
-            ChatListView()
+            ChatListView(deepLinkRoomId: $deepLinkRoomId)
                 .tabItem {
                     Label("채팅", image: selectedTab == 2 ? "icon_tab_chat_heart_fill" : "icon_tab_chat_heart")
                 }
@@ -45,7 +47,7 @@ struct MainView: View {
                 ChatBannerView(info: info) {
                     dismissBanner()
                     selectedTab = 2
-                    NotificationCenter.default.post(name: .chatRoomDeepLink, object: info.roomId)
+                    deepLinkRoomId = info.roomId
                 }
                 .transition(.move(edge: .top).combined(with: .opacity))
                 .padding(.horizontal, 12)
@@ -53,8 +55,16 @@ struct MainView: View {
             }
         }
         .animation(.spring(duration: 0.35), value: banner != nil)
-        .onReceive(NotificationCenter.default.publisher(for: .chatRoomDeepLink)) { _ in
+        .onReceive(NotificationCenter.default.publisher(for: .chatRoomDeepLink)) { notif in
             selectedTab = 2
+            deepLinkRoomId = notif.object as? String
+        }
+        .onAppear {
+            consumePendingDeepLink()
+        }
+        .onChange(of: scenePhase) { _, phase in
+            guard phase == .active else { return }
+            consumePendingDeepLink()
         }
         .onReceive(NotificationCenter.default.publisher(for: .inAppChatBanner)) { notif in
             guard let info = notif.userInfo,
@@ -63,6 +73,14 @@ struct MainView: View {
                   let roomId = info["roomId"] as? String else { return }
             showBanner(.init(title: title, body: body, roomId: roomId))
         }
+    }
+
+    private func consumePendingDeepLink() {
+        guard let delegate = UIApplication.shared.delegate as? AppDelegate,
+              let roomId = delegate.pendingDeepLinkRoomId else { return }
+        delegate.pendingDeepLinkRoomId = nil
+        selectedTab = 2
+        deepLinkRoomId = roomId
     }
 
     private func showBanner(_ info: ChatBannerInfo) {
