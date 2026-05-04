@@ -2,12 +2,16 @@
 //  ChatListView.swift
 //  Throughway
 //
+//  Created by passi on 5/2/26.
+//
 
 import SwiftUI
 import Kingfisher
 
 struct ChatListView: View {
     @StateObject private var viewModel = ChatListViewModel()
+    @State private var isSearchPresented = false
+    @State private var pendingRoom: ChatRoomDTO?
 
     var body: some View {
         NavigationStack {
@@ -24,13 +28,35 @@ struct ChatListView: View {
             .navigationTitle("채팅")
             .navigationBarTitleDisplayMode(.large)
             .background(Color.gray0)
+            .toolbar {
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button {
+                        isSearchPresented = true
+                    } label: {
+                        Image(systemName: "magnifyingglass")
+                            .foregroundStyle(Color.gray90)
+                    }
+                }
+            }
+            .navigationDestination(item: Binding(
+                get: { viewModel.state.selectedRoom },
+                set: { _ in viewModel.send(.clearSelection) }
+            )) { room in
+                ChatDetailView(room: room, myUserId: viewModel.state.myUserId)
+            }
         }
-        .task { viewModel.send(.onAppear) }
-        .navigationDestination(item: Binding(
-            get: { viewModel.state.selectedRoom },
-            set: { _ in viewModel.send(.clearSelection) }
-        )) { room in
-            ChatDetailView(room: room, myUserId: viewModel.state.myUserId)
+        .onAppear { viewModel.send(.onAppear) }
+        .fullScreenCover(isPresented: $isSearchPresented) {
+            UserSearchView(myUserId: viewModel.state.myUserId) { room in
+                pendingRoom = room
+                isSearchPresented = false
+            }
+        }
+        .onChange(of: isSearchPresented) { _, isPresented in
+            if !isPresented, let room = pendingRoom {
+                viewModel.send(.roomTapped(room))
+                pendingRoom = nil
+            }
         }
     }
 
@@ -39,7 +65,11 @@ struct ChatListView: View {
             Button {
                 viewModel.send(.roomTapped(room))
             } label: {
-                ChatRoomRowView(room: room, myUserId: viewModel.state.myUserId)
+                ChatRoomRowView(
+                    room: room,
+                    myUserId: viewModel.state.myUserId,
+                    localLastMessage: viewModel.state.roomLastMessages[room.roomId]
+                )
             }
             .listRowBackground(Color.gray0)
             .listRowSeparatorTint(Color.gray15)
@@ -66,9 +96,14 @@ struct ChatListView: View {
 private struct ChatRoomRowView: View {
     let room: ChatRoomDTO
     let myUserId: String
+    let localLastMessage: ChatMessageDTO?
 
     private var opponent: ChatParticipantDTO? {
         room.participants.first { $0.userId != myUserId }
+    }
+
+    private var lastContent: String {
+        localLastMessage?.content ?? room.lastChat?.content ?? ""
     }
 
     var body: some View {
@@ -79,7 +114,7 @@ private struct ChatRoomRowView: View {
                     .font(.Pretendard.body1)
                     .fontWeight(.semibold)
                     .foregroundStyle(Color.gray90)
-                Text(room.lastChat?.content ?? "")
+                Text(lastContent)
                     .font(.Pretendard.caption1)
                     .foregroundStyle(Color.gray45)
                     .lineLimit(1)

@@ -2,6 +2,8 @@
 //  ChatListViewModel.swift
 //  Throughway
 //
+//  Created by passi on 5/2/26.
+//
 
 import Foundation
 
@@ -10,13 +12,17 @@ final class ChatListViewModel: BaseViewModel<ChatListFeature.State, ChatListFeat
 
     private let chatClient: ChatAPIClient
     private let tokenClient: TokenClient
+    private let userClient: UserAPIClient
+    private let chatRepo = ChatRepository()
 
     init(
         chatClient: ChatAPIClient = .live,
-        tokenClient: TokenClient = .live
+        tokenClient: TokenClient = .live,
+        userClient: UserAPIClient = .live
     ) {
         self.chatClient = chatClient
         self.tokenClient = tokenClient
+        self.userClient = userClient
         super.init(initialState: .init())
     }
 
@@ -39,9 +45,16 @@ final class ChatListViewModel: BaseViewModel<ChatListFeature.State, ChatListFeat
 
     private func loadMyUserId() async {
         guard state.myUserId.isEmpty else { return }
-        // accessToken JWT에서 userId 디코딩 또는 UserDefaults 캐싱
         if let cached = UserDefaults.standard.string(forKey: "myUserId"), !cached.isEmpty {
             reduce { $0.myUserId = cached }
+            return
+        }
+        do {
+            let profile = try await userClient.fetchMyProfile()
+            UserDefaults.standard.set(profile.userId, forKey: "myUserId")
+            reduce { $0.myUserId = profile.userId }
+        } catch {
+            print("[ChatList] loadMyUserId error:", error)
         }
     }
 
@@ -51,7 +64,16 @@ final class ChatListViewModel: BaseViewModel<ChatListFeature.State, ChatListFeat
         do {
             let response = try await chatClient.fetchRooms()
             let sorted = response.data.sorted { $0.updatedAt > $1.updatedAt }
-            reduce { $0.rooms = sorted }
+            var localMap: [String: ChatMessageDTO] = [:]
+            for room in sorted {
+                if let msg = chatRepo.lastMessage(roomId: room.roomId) {
+                    localMap[room.roomId] = msg
+                }
+            }
+            reduce {
+                $0.rooms = sorted
+                $0.roomLastMessages = localMap
+            }
         } catch {
             print("[ChatList] fetchRooms error:", error)
         }
