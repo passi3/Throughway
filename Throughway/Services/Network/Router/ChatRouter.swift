@@ -8,7 +8,7 @@ import Alamofire
 
 enum ChatRouter: TargetType {
     case fetchRooms
-    case createOrGetRoom(opponentId: String)
+    case createOrGetRoom(CreateChatRoomRequestDTO)
     case fetchMessages(roomId: String, cursorDate: String?)
     case sendMessage(roomId: String, body: SendMessageRequestDTO)
 }
@@ -19,8 +19,8 @@ extension ChatRouter {
         switch self {
         case .fetchRooms:
             return "/v1/chats"
-        case .createOrGetRoom(let opponentId):
-            return "/v1/chats/\(opponentId)"
+        case .createOrGetRoom:
+            return "/v1/chats"
         case .fetchMessages(let roomId, _):
             return "/v1/chats/\(roomId)"
         case .sendMessage(let roomId, _):
@@ -39,6 +39,8 @@ extension ChatRouter {
 
     var body: RequestBody {
         switch self {
+        case .createOrGetRoom(let dto):
+            return .json(dto)
         case .sendMessage(_, let dto):
             return .json(dto)
         default:
