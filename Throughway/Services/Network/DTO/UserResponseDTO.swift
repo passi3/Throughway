@@ -69,6 +69,23 @@ nonisolated struct UserSummaryDTO: Decodable {
     }
 }
 
+// 유저 검색 (채팅 대상 검색용, introduction 포함)
+nonisolated struct UserInfoResponseDTO: Decodable {
+    let userId: String
+    let nick: String
+    let profileImage: String?
+    let introduction: String?
+
+    enum CodingKeys: String, CodingKey {
+        case userId = "user_id"
+        case nick, profileImage, introduction
+    }
+}
+
+nonisolated struct UserInfoListResponseDTO: Decodable {
+    let data: [UserInfoResponseDTO]
+}
+
 // 프로필 이미지 업로드
 nonisolated struct ProfileImageResponseDTO: Decodable {
     let profileImage: String

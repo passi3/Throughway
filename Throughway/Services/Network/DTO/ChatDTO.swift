@@ -67,11 +67,13 @@ struct ChatParticipantDTO: Decodable, Sendable {
     let userId: String
     let nick: String
     let profileImage: String?
+    let introduction: String?
 
     enum CodingKeys: String, CodingKey {
         case userId = "user_id"
         case nick
         case profileImage
+        case introduction
     }
 }
 
@@ -124,6 +126,14 @@ struct ChatMessageListResponseDTO: Decodable, Sendable {
 }
 
 // MARK: - Request
+
+struct CreateChatRoomRequestDTO: Encodable {
+    let opponentId: String
+
+    enum CodingKeys: String, CodingKey {
+        case opponentId = "opponent_id"
+    }
+}
 
 struct SendMessageRequestDTO: Encodable {
     let content: String
