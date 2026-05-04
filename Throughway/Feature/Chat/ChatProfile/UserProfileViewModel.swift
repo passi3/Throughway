@@ -13,23 +13,39 @@ final class UserProfileViewModel: BaseViewModel<UserProfileFeature.State, UserPr
     let user: UserInfoResponseDTO
     private let myUserId: String
     private let chatAPIClient: ChatAPIClient
+    private let postAPIClient: PostAPIClient
     var onChatReady: ((ChatRoomDTO) -> Void)?
 
     init(
         user: UserInfoResponseDTO,
         myUserId: String,
-        chatAPIClient: ChatAPIClient = .live
+        chatAPIClient: ChatAPIClient = .live,
+        postAPIClient: PostAPIClient = .live
     ) {
         self.user = user
         self.myUserId = myUserId
         self.chatAPIClient = chatAPIClient
+        self.postAPIClient = postAPIClient
         super.init(initialState: .init())
     }
 
     override func send(_ intent: UserProfileFeature.Intent) {
         switch intent {
+        case .onAppear:
+            Task { await fetchUserPosts() }
         case .chatTapped:
             Task { await createOrGetRoom() }
+        }
+    }
+
+    private func fetchUserPosts() async {
+        reduce { $0.isLoadingPosts = true }
+        defer { reduce { $0.isLoadingPosts = false } }
+        do {
+            let result = try await postAPIClient.fetchUserPosts(user.userId)
+            reduce { $0.posts = result.data }
+        } catch {
+            print("[UserProfile] fetchUserPosts failed: \(error.localizedDescription)")
         }
     }
 
