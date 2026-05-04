@@ -14,6 +14,7 @@ enum ChatListFeature {
         var selectedRoom: ChatRoomDTO? = nil
         var myUserId: String = ""
         var roomLastMessages: [String: ChatMessageDTO] = [:]
+        var pendingDeepLinkRoomId: String? = nil
     }
 
     enum Intent: BaseIntent {
@@ -22,5 +23,6 @@ enum ChatListFeature {
         case refresh
         case roomTapped(ChatRoomDTO)
         case clearSelection
+        case openRoom(roomId: String)
     }
 }

@@ -37,7 +37,7 @@ final class ChatDetailViewModel: BaseViewModel<ChatDetailFeature.State, ChatDeta
 
         case .onDisappear:
             listenTask?.cancel()
-            SocketIOManager.shared.disconnect()
+            SocketIOManager.shared.disconnectSingle()
 
         case .inputChanged(let text):
             reduce { $0.inputText = text }
@@ -108,7 +108,7 @@ final class ChatDetailViewModel: BaseViewModel<ChatDetailFeature.State, ChatDeta
     // MARK: - 실시간 메시지 수신
 
     private func listenForMessages() async {
-        for await message in SocketIOManager.shared.incomingMessages {
+        for await message in SocketIOManager.shared.messageStream() {
             guard !Task.isCancelled else { break }
             guard message.roomId == room.roomId else { continue }
             guard !state.messages.contains(where: { $0.chatId == message.chatId }) else { continue }

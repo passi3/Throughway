@@ -7,8 +7,10 @@
 
 import SwiftUI
 import Kingfisher
+import UIKit
 
 struct ChatListView: View {
+    @Binding var deepLinkRoomId: String?
     @StateObject private var viewModel = ChatListViewModel()
     @State private var isSearchPresented = false
     @State private var pendingRoom: ChatRoomDTO?
@@ -58,6 +60,16 @@ struct ChatListView: View {
         .onChange(of: scenePhase) { _, phase in
             guard isActive, phase == .active else { return }
             viewModel.send(.refresh)
+        }
+        .onChange(of: viewModel.state.selectedRoom) { old, new in
+            if old != nil && new == nil {
+                viewModel.send(.refresh)
+            }
+        }
+        .onChange(of: deepLinkRoomId) { _, roomId in
+            guard let roomId else { return }
+            deepLinkRoomId = nil
+            viewModel.send(.openRoom(roomId: roomId))
         }
         .fullScreenCover(isPresented: $isSearchPresented) {
             UserSearchView(myUserId: viewModel.state.myUserId) { room in

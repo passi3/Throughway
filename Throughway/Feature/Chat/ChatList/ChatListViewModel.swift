@@ -48,6 +48,9 @@ final class ChatListViewModel: BaseViewModel<ChatListFeature.State, ChatListFeat
 
         case .clearSelection:
             reduce { $0.selectedRoom = nil }
+
+        case .openRoom(let roomId):
+            Task { await openRoom(roomId: roomId) }
         }
     }
 
@@ -83,6 +86,15 @@ final class ChatListViewModel: BaseViewModel<ChatListFeature.State, ChatListFeat
                 $0.roomLastMessages = localMap
             }
 
+            // 딥링크 pending 처리: fetchRooms 완료 후 네비게이션
+            if let roomId = state.pendingDeepLinkRoomId,
+               let room = sorted.first(where: { $0.roomId == roomId }) {
+                reduce {
+                    $0.pendingDeepLinkRoomId = nil
+                    $0.selectedRoom = room
+                }
+            }
+
             let roomIds = sorted.map { $0.roomId }
             let token = await tokenClient.loadAccessToken() ?? ""
             SocketIOManager.shared.connectAll(roomIds: roomIds, token: token)
@@ -92,8 +104,19 @@ final class ChatListViewModel: BaseViewModel<ChatListFeature.State, ChatListFeat
         }
     }
 
+    private func openRoom(roomId: String) async {
+        // NavigationStack 준비 대기
+        try? await Task.sleep(for: .milliseconds(200))
+        if let room = state.rooms.first(where: { $0.roomId == roomId }) {
+            reduce { $0.selectedRoom = room }
+        } else {
+            // rooms가 아직 로드되지 않은 경우 pending 저장 → fetchRoomsAndConnect 완료 후 처리
+            reduce { $0.pendingDeepLinkRoomId = roomId }
+        }
+    }
+
     private func listenForMessages() async {
-        for await message in SocketIOManager.shared.incomingMessages {
+        for await message in SocketIOManager.shared.messageStream() {
             guard !Task.isCancelled else { break }
             chatRepo.save(message: message)
             reduce { state in
