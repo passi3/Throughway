@@ -32,6 +32,15 @@ final class ChatRepository {
             .createdAt
     }
 
+    // 마지막 메시지 DTO — 채팅방 목록 표시용
+    func lastMessage(roomId: String) -> ChatMessageDTO? {
+        realm.objects(ChatMessageObject.self)
+            .where { $0.roomId == roomId }
+            .sorted(byKeyPath: "createdAt", ascending: false)
+            .first?
+            .toDTO()
+    }
+
     // upsert — primaryKey(chatId) 기준 중복 방지
     func save(messages: [ChatMessageDTO]) {
         let objects = messages.map { $0.toObject() }

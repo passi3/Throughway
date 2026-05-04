@@ -25,6 +25,7 @@ struct UserAPIClient {
     var updateMyProfile:    @Sendable (UpdateProfileRequestDTO) async throws -> MyProfileResponseDTO
     var uploadProfileImage: @Sendable (Data) async throws -> ProfileImageResponseDTO
     var searchUser:         @Sendable (String) async throws -> UserSearchResponseDTO
+    var searchUserInfo:     @Sendable (String) async throws -> UserInfoListResponseDTO
 }
 
 // MARK: - Live
@@ -68,6 +69,9 @@ extension UserAPIClient {
                 try await network.request(UserRouter.uploadProfileImage(data))
             },
             searchUser: { query in
+                try await network.request(UserRouter.searchUser(query: query))
+            },
+            searchUserInfo: { query in
                 try await network.request(UserRouter.searchUser(query: query))
             }
         )
