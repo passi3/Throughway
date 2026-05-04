@@ -11,6 +11,7 @@ enum ChatRouter: TargetType {
     case createOrGetRoom(CreateChatRoomRequestDTO)
     case fetchMessages(roomId: String, cursorDate: String?)
     case sendMessage(roomId: String, body: SendMessageRequestDTO)
+    case uploadFiles(roomId: String, parts: [(data: Data, fileName: String, mimeType: String)])
 }
 
 extension ChatRouter {
@@ -25,6 +26,8 @@ extension ChatRouter {
             return "/v1/chats/\(roomId)"
         case .sendMessage(let roomId, _):
             return "/v1/chats/\(roomId)"
+        case .uploadFiles(let roomId, _):
+            return "/v1/chats/\(roomId)/files"
         }
     }
 
@@ -32,7 +35,7 @@ extension ChatRouter {
         switch self {
         case .fetchRooms, .fetchMessages:
             return .get
-        case .createOrGetRoom, .sendMessage:
+        case .createOrGetRoom, .sendMessage, .uploadFiles:
             return .post
         }
     }
@@ -43,6 +46,11 @@ extension ChatRouter {
             return .json(dto)
         case .sendMessage(_, let dto):
             return .json(dto)
+        case .uploadFiles(_, let parts):
+            let multiparts = parts.map { p in
+                MultipartBody.Part(name: "files", data: p.data, fileName: p.fileName, mimeType: p.mimeType)
+            }
+            return .multipart(MultipartBody(parts: multiparts))
         default:
             return .none
         }
