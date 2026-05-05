@@ -1,4 +1,4 @@
-//
+
 //  ActivityView.swift
 //  Throughway
 //
@@ -23,7 +23,7 @@ struct ActivityView: View {
                     heroHeader
 
                     filterChips
-                        .padding(.top, 20)
+                        .padding(.top, 12)
 
                     activityList
                         .padding(.top, 16)
@@ -86,62 +86,29 @@ private extension ActivityView {
     var heroHeader: some View {
         Group {
             if viewModel.state.banners.isEmpty {
-                heroBannerPlaceholder
+                Rectangle()
+                    .fill(
+                        LinearGradient(
+                            colors: [Color.blackSeafoam, Color.deepSeafoam],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        )
+                    )
+                    .aspectRatio(2, contentMode: .fit)
             } else {
                 TabView {
                     ForEach(viewModel.state.banners.indices, id: \.self) { index in
-                        heroBannerCard(viewModel.state.banners[index])
+                        KFImage(viewModel.state.banners[index].imageUrl.serverImageURL)
+                            .requestModifier(AuthImageModifier())
+                            .resizable()
+                            .scaledToFit()
                             .onTapGesture { viewModel.send(.bannerTapped(viewModel.state.banners[index])) }
                     }
                 }
                 .tabViewStyle(.page(indexDisplayMode: viewModel.state.banners.count > 1 ? .automatic : .never))
-                .frame(height: 160)
+                .aspectRatio(4, contentMode: .fit)
             }
         }
-    }
-
-    var heroBannerPlaceholder: some View {
-        Rectangle()
-            .fill(
-                LinearGradient(
-                    colors: [Color.blackSeafoam, Color.deepSeafoam],
-                    startPoint: .topLeading,
-                    endPoint: .bottomTrailing
-                )
-            )
-            .frame(maxWidth: .infinity)
-            .frame(height: 160)
-    }
-
-    func heroBannerCard(_ banner: BannerItemDTO) -> some View {
-        ZStack(alignment: .bottomLeading) {
-            KFImage(banner.imageUrl.serverImageURL)
-                .requestModifier(AuthImageModifier())
-                .placeholder {
-                    LinearGradient(
-                        colors: [Color.blackSeafoam, Color.deepSeafoam],
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing
-                    )
-                }
-                .resizable()
-                .scaledToFill()
-
-            LinearGradient(
-                colors: [.clear, .black.opacity(0.55)],
-                startPoint: .center,
-                endPoint: .bottom
-            )
-
-            Text(banner.name)
-                .font(.Pretendard.body1)
-                .fontWeight(.bold)
-                .foregroundStyle(.white)
-                .padding(20)
-        }
-        .frame(maxWidth: .infinity)
-        .frame(height: 160)
-        .clipped()
     }
 
     var filterChips: some View {
@@ -179,8 +146,14 @@ private extension ActivityView {
                     .padding(.vertical, 40)
             } else {
                 ForEach(viewModel.state.activities, id: \.activityId) { activity in
-                    NavigationLink(destination: DetailView(activity: activity)) {
-                        ActivityCard(activity: activity)
+                    let override = viewModel.state.keepOverrides[activity.activityId]
+                    let displayed = override.map {
+                        ActivitySummaryDTO(activity, isKeep: $0.isKeep, keepCount: $0.keepCount)
+                    } ?? activity
+                    NavigationLink(destination: DetailView(activity: displayed)) {
+                        ActivityCard(activity: displayed, onKeepTapped: {
+                            viewModel.send(.keepToggled(activityId: activity.activityId))
+                        })
                     }
                     .buttonStyle(.plain)
                 }
@@ -211,6 +184,7 @@ private extension ActivityView {
 
 struct ActivityCard: View {
     let activity: ActivitySummaryDTO
+    var onKeepTapped: (() -> Void)? = nil
 
     var body: some View {
         HStack(spacing: 12) {
@@ -228,9 +202,14 @@ struct ActivityCard: View {
 
                     Spacer()
 
-                    Image(systemName: activity.isKeep ? "heart.fill" : "heart")
-                        .font(.system(size: 16))
-                        .foregroundStyle(Color.rosyPunch)
+                    Button {
+                        onKeepTapped?()
+                    } label: {
+                        Image(systemName: activity.isKeep ? "heart.fill" : "heart")
+                            .font(.system(size: 16))
+                            .foregroundStyle(Color.rosyPunch)
+                    }
+                    .buttonStyle(.borderless)
                 }
 
                 HStack(spacing: 4) {
