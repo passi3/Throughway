@@ -54,6 +54,7 @@ extension Notification.Name {
     static let fcmTokenDidUpdate   = Notification.Name("fcmTokenDidUpdate")
     static let chatRoomDeepLink    = Notification.Name("chatRoomDeepLink")
     static let inAppChatBanner     = Notification.Name("inAppChatBanner")
+    static let activityKeepDidChange = Notification.Name("activityKeepDidChange")
 }
 
 extension AppDelegate: UNUserNotificationCenterDelegate {

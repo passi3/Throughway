@@ -11,7 +11,7 @@ import MapKit
 
 struct DetailView: View {
     @StateObject private var viewModel: DetailViewModel
-    
+
     init(activity: ActivitySummaryDTO) {
         _viewModel = StateObject(wrappedValue: DetailViewModel(summary: activity))
     }

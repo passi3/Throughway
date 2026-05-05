@@ -80,7 +80,14 @@ final class DetailViewModel: BaseViewModel<DetailFeature.State, DetailFeature.In
         reduce { $0.keepOverride = (newIsKeep, newCount) }
         do {
             let response = try await activityClient.toggleKeep(summary.activityId, newIsKeep)
-            reduce { $0.keepOverride = (response.keepStatus, newCount) }
+            let confirmedIsKeep = response.keepStatus
+            let confirmedCount = max(0, keepCount + (confirmedIsKeep == newIsKeep ? 0 : (confirmedIsKeep ? 1 : -1)))
+            reduce { $0.keepOverride = (confirmedIsKeep, newCount) }
+            NotificationCenter.default.post(
+                name: .activityKeepDidChange,
+                object: nil,
+                userInfo: ["activityId": summary.activityId, "isKeep": confirmedIsKeep, "keepCount": newCount]
+            )
         } catch {
             reduce { $0.keepOverride = nil }
             print("[Detail] toggleKeep failed: \(error.localizedDescription)")
