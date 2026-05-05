@@ -7,14 +7,10 @@
 
 import SwiftUI
 import Kingfisher
+import MapKit
 
 struct DetailView: View {
     @StateObject private var viewModel: DetailViewModel
-    
-    private let times = [
-        "8:00", "8:30", "9:00", "9:30", "10:00", "10:30", "11:00", "11:30",
-        "13:00", "13:30", "14:00", "14:30", "15:00", "15:30", "16:00", "16:30"
-    ]
     
     init(activity: ActivitySummaryDTO) {
         _viewModel = StateObject(wrappedValue: DetailViewModel(summary: activity))
@@ -31,6 +27,10 @@ struct DetailView: View {
                     infoSection
                     divider
                     priceSection
+                    if !viewModel.schedule.isEmpty {
+                        divider
+                        scheduleSection
+                    }
                     divider
                     Text("엑티비티 예약설정")
                         .font(.Pretendard.body1)
@@ -191,7 +191,7 @@ private extension DetailView {
             infoItem(
                 icon: "person.2",
                 title: "최대참가인원",
-                value: viewModel.state.detail?.schedule?.maxParticipants.map { "\($0)명" } ?? "-"
+                value: viewModel.restrictions?.maxParticipants.map { "\($0)명" } ?? "-"
             )
         }
         .frame(maxWidth: .infinity)
@@ -257,6 +257,76 @@ private extension DetailView {
         }
     }
     
+    var scheduleSection: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("일정")
+                .font(.Pretendard.body2)
+                .fontWeight(.semibold)
+                .foregroundStyle(Color.gray90)
+
+            VStack(alignment: .leading, spacing: 0) {
+                ForEach(Array(viewModel.schedule.enumerated()), id: \.offset) { idx, item in
+                    HStack(alignment: .top, spacing: 16) {
+                        VStack(spacing: 0) {
+                            Circle()
+                                .fill(Color.blackSeafoam)
+                                .frame(width: 10, height: 10)
+                                .padding(.top, 4)
+                            Rectangle()
+                                .fill(Color.gray30)
+                                .frame(width: 1.5)
+                                .frame(maxHeight: .infinity)
+                        }
+                        .frame(width: 10)
+
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text(item.duration)
+                                .font(.Pretendard.body3)
+                                .fontWeight(.semibold)
+                                .foregroundStyle(Color.gray90)
+                            Text(item.description)
+                                .font(.Pretendard.caption1)
+                                .foregroundStyle(Color.gray60)
+                                .lineSpacing(3)
+                        }
+                        .padding(.bottom, 20)
+                    }
+                }
+
+                // 마지막: 지도
+                HStack(alignment: .top, spacing: 16) {
+                    Circle()
+                        .fill(Color.blackSeafoam)
+                        .frame(width: 10, height: 10)
+                        .padding(.top, 4)
+                        .frame(width: 10)
+
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("장소 위치 정보")
+                            .font(.Pretendard.body3)
+                            .fontWeight(.semibold)
+                            .foregroundStyle(Color.gray90)
+
+                        let coord = CLLocationCoordinate2D(
+                            latitude: viewModel.geolocation.latitude,
+                            longitude: viewModel.geolocation.longitude
+                        )
+                        Map(position: .constant(.region(MKCoordinateRegion(
+                            center: coord,
+                            span: MKCoordinateSpan(latitudeDelta: 0.005, longitudeDelta: 0.005)
+                        )))) {
+                            Marker("", coordinate: coord)
+                                .tint(Color.blackSeafoam)
+                        }
+                        .frame(height: 180)
+                        .clipShape(RoundedRectangle(cornerRadius: 10))
+                        .disabled(true)
+                    }
+                }
+            }
+        }
+    }
+
     var dateSection: some View {
         VStack(alignment: .leading, spacing: 12) {
             Text("날짜 선택")
@@ -265,17 +335,19 @@ private extension DetailView {
                 .foregroundStyle(Color.gray90)
             
             if viewModel.availableDates.isEmpty {
-                Text("날짜 정보를 불러오는 중...")
+                Text("예약 가능한 날짜가 없습니다.")
                     .font(.Pretendard.caption1)
                     .foregroundStyle(Color.gray45)
             } else {
                 ScrollView(.horizontal, showsIndicators: false) {
                     HStack(spacing: 8) {
-                        ForEach(Array(viewModel.availableDates.enumerated()), id: \.offset) { index, date in
+                        ForEach(Array(viewModel.availableDates.enumerated()), id: \.offset) { index, dateStr in
                             Button {
                                 viewModel.send(.dateSelected(index))
                             } label: {
-                                Text(AppFormatter.chipDate.string(from: date))
+                                let display = AppFormatter.serverDate.date(from: dateStr)
+                                    .map { AppFormatter.chipDate.string(from: $0) } ?? dateStr
+                                Text(display)
                                     .font(.Pretendard.caption1)
                                     .fontWeight(viewModel.state.selectedDateIndex == index ? .semibold : .regular)
                                     .foregroundStyle(viewModel.state.selectedDateIndex == index ? Color.gray0 : Color.gray60)
@@ -298,12 +370,18 @@ private extension DetailView {
                 .font(.Pretendard.body2)
                 .fontWeight(.semibold)
                 .foregroundStyle(Color.gray90)
-            
-            if !amTimes.isEmpty {
-                timePeriodGrid(label: "오전", slots: amTimes)
-            }
-            if !pmTimes.isEmpty {
-                timePeriodGrid(label: "오후", slots: pmTimes)
+
+            if viewModel.availableTimes.isEmpty {
+                Text("예약 가능한 시간이 없습니다.")
+                    .font(.Pretendard.caption1)
+                    .foregroundStyle(Color.gray45)
+            } else {
+                if !amTimes.isEmpty {
+                    timePeriodGrid(label: "오전", slots: amTimes)
+                }
+                if !pmTimes.isEmpty {
+                    timePeriodGrid(label: "오후", slots: pmTimes)
+                }
             }
         }
     }
@@ -385,8 +463,8 @@ private extension DetailView {
 // MARK: - Time Helpers
 
 private extension DetailView {
-    var amTimes: [String] { times.filter { hour(of: $0) < 12 } }
-    var pmTimes: [String] { times.filter { hour(of: $0) >= 12 } }
+    var amTimes: [String] { viewModel.availableTimes.filter { hour(of: $0) < 12 } }
+    var pmTimes: [String] { viewModel.availableTimes.filter { hour(of: $0) >= 12 } }
     
     func hour(of time: String) -> Int {
         Int(time.split(separator: ":").first ?? "0") ?? 0

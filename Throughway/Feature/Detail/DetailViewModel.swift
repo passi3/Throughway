@@ -33,6 +33,8 @@ final class DetailViewModel: BaseViewModel<DetailFeature.State, DetailFeature.In
     var rating: Double? { state.detail?.rating }
     var reviewCount: Int? { state.detail?.reviewCount }
     var restrictions: ActivityRestrictionsDTO? { state.detail?.restrictions }
+    var geolocation: GeolocationDTO { state.detail?.geolocation ?? summary.geolocation }
+    var schedule: [ActivityScheduleItemDTO] { state.detail?.schedule ?? [] }
 
     var discountPercent: Int? {
         let orig = price.original, fin = price.final
@@ -40,20 +42,17 @@ final class DetailViewModel: BaseViewModel<DetailFeature.State, DetailFeature.In
         return Int(round(Double(orig - fin) / Double(orig) * 100))
     }
 
-    var availableDates: [Date] {
-        guard let startRaw = state.detail?.startDate,
-              let endRaw   = state.detail?.endDate else { return [] }
-        guard let start = AppFormatter.serverDate.date(from: startRaw),
-              let end   = AppFormatter.serverDate.date(from: endRaw),
-              start <= end else { return [] }
-        var dates: [Date] = []
-        var cur = start
-        let cal = Calendar.current
-        while cur <= end {
-            dates.append(cur)
-            cur = cal.date(byAdding: .day, value: 1, to: cur)!
-        }
-        return dates
+    var availableDates: [String] {
+        state.detail?.reservationList.map { $0.itemName } ?? []
+    }
+
+    var availableTimes: [String] {
+        guard let detail = state.detail,
+              state.selectedDateIndex < detail.reservationList.count else { return [] }
+        return detail.reservationList[state.selectedDateIndex]
+            .times
+            .filter { !$0.isReserved }
+            .map { $0.time }
     }
 
     override func send(_ intent: DetailFeature.Intent) {
@@ -62,7 +61,10 @@ final class DetailViewModel: BaseViewModel<DetailFeature.State, DetailFeature.In
             Task { await fetchDetail() }
 
         case .dateSelected(let index):
-            reduce { $0.selectedDateIndex = index }
+            reduce {
+                $0.selectedDateIndex = index
+                $0.selectedTime = nil
+            }
 
         case .timeSelected(let time):
             reduce { $0.selectedTime = time }

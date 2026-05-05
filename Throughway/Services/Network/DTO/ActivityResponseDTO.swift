@@ -102,7 +102,7 @@ struct ActivityDetailDTO: Decodable, Sendable {
     let rating: Double?
     let reviewCount: Int?
     let description: String?
-    let schedule: ActivityScheduleDTO?
+    let schedule: [ActivityScheduleItemDTO]
     let restrictions: ActivityRestrictionsDTO?
     let reservationList: [ActivityReservationDTO]
     let creator: ActivityCreatorDTO?
@@ -156,7 +156,7 @@ struct ActivityDetailDTO: Decodable, Sendable {
         rating          = try container.decodeIfPresent(Double.self, forKey: .rating)
         reviewCount     = try container.decodeIfPresent(Int.self, forKey: .reviewCount)
         description     = try container.decodeIfPresent(String.self, forKey: .description)
-        schedule        = try container.decodeIfPresent(ActivityScheduleDTO.self, forKey: .schedule)
+        schedule        = try container.decodeIfPresent([ActivityScheduleItemDTO].self, forKey: .schedule) ?? []
         restrictions    = try container.decodeIfPresent(ActivityRestrictionsDTO.self, forKey: .restrictions)
         reservationList = try container.decodeIfPresent([ActivityReservationDTO].self, forKey: .reservationList) ?? []
         creator         = try container.decodeIfPresent(ActivityCreatorDTO.self, forKey: .creator)
@@ -168,14 +168,34 @@ struct ActivityDetailDTO: Decodable, Sendable {
 struct ActivityRestrictionsDTO: Decodable, Sendable {
     let minAge: Int?
     let minHeight: Int?
+    let maxParticipants: Int?
 
     enum CodingKeys: String, CodingKey {
-        case minAge    = "min_age"
-        case minHeight = "min_height"
+        case minAge          = "min_age"
+        case minHeight       = "min_height"
+        case maxParticipants = "max_participants"
     }
 }
 
-struct ActivityReservationDTO: Decodable, Sendable {}
+struct ActivityReservationDTO: Decodable, Sendable {
+    let itemName: String
+    let times: [ActivityTimeSlotDTO]
+
+    enum CodingKeys: String, CodingKey {
+        case itemName = "item_name"
+        case times
+    }
+}
+
+struct ActivityTimeSlotDTO: Decodable, Sendable {
+    let time: String
+    let isReserved: Bool
+
+    enum CodingKeys: String, CodingKey {
+        case time
+        case isReserved = "is_reserved"
+    }
+}
 
 struct ActivityCreatorDTO: Decodable, Sendable {
     let userId: String
@@ -189,16 +209,9 @@ struct ActivityCreatorDTO: Decodable, Sendable {
     }
 }
 
-struct ActivityScheduleDTO: Decodable, Sendable {
-    let minParticipants: Int?
-    let maxParticipants: Int?
-    let durationKm: Double?
-
-    enum CodingKeys: String, CodingKey {
-        case minParticipants = "min_participants"
-        case maxParticipants = "max_participants"
-        case durationKm      = "duration_km"
-    }
+struct ActivityScheduleItemDTO: Decodable, Sendable {
+    let duration: String
+    let description: String
 }
 
 // MARK: - 킵 토글
