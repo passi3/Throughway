@@ -13,12 +13,14 @@ enum ActivityFeature {
         var banners: [BannerItemDTO] = []
         var isLoading: Bool = false
         var webViewURL: URL?
+        var keepOverrides: [String: (isKeep: Bool, keepCount: Int)] = [:]
     }
 
     enum Intent: BaseIntent {
         case onAppear
         case bannerTapped(BannerItemDTO)
         case webViewDismissed
+        case keepToggled(activityId: String)
     }
 }
 
@@ -27,10 +29,13 @@ enum ActivitySearchFeature {
         var results: [ActivitySummaryDTO] = []
         var isLoading: Bool = false
         var hasSearched: Bool = false
+        var keepOverrides: [String: (isKeep: Bool, keepCount: Int)] = [:]
     }
 
     enum Intent: BaseIntent {
         case searchSubmitted(String)
         case reset
+        case keepToggled(activityId: String)
+        case keepUpdated(activityId: String, isKeep: Bool, keepCount: Int)
     }
 }

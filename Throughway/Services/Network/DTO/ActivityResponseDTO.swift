@@ -71,6 +71,23 @@ struct ActivitySummaryDTO: Decodable, Sendable {
     }
 }
 
+extension ActivitySummaryDTO {
+    init(_ base: ActivitySummaryDTO, isKeep: Bool, keepCount: Int) {
+        self.activityId      = base.activityId
+        self.title           = base.title
+        self.country         = base.country
+        self.category        = base.category
+        self.thumbnails      = base.thumbnails
+        self.geolocation     = base.geolocation
+        self.price           = base.price
+        self.tags            = base.tags
+        self.pointReward     = base.pointReward
+        self.isAdvertisement = base.isAdvertisement
+        self.isKeep          = isKeep
+        self.keepCount       = keepCount
+    }
+}
+
 struct GeolocationDTO: Decodable, Sendable {
     let longitude: Double
     let latitude: Double

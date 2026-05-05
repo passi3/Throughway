@@ -148,8 +148,14 @@ private extension ActivitySearchView {
 
                 VStack(spacing: 12) {
                     ForEach(viewModel.state.results, id: \.activityId) { activity in
-                        NavigationLink(destination: DetailView(activity: activity)) {
-                            ActivityCard(activity: activity)
+                        let override = viewModel.state.keepOverrides[activity.activityId]
+                        let displayed = override.map {
+                            ActivitySummaryDTO(activity, isKeep: $0.isKeep, keepCount: $0.keepCount)
+                        } ?? activity
+                        NavigationLink(destination: DetailView(activity: displayed)) {
+                            ActivityCard(activity: displayed, onKeepTapped: {
+                                viewModel.send(.keepToggled(activityId: activity.activityId))
+                            })
                         }
                         .buttonStyle(.plain)
                     }
