@@ -217,12 +217,10 @@ struct ActivityScheduleItemDTO: Decodable, Sendable {
 // MARK: - 킵 토글
 
 struct KeepToggleResponseDTO: Decodable, Sendable {
-    let activityId: String
-    let isKeep: Bool
+    let keepStatus: Bool
 
     enum CodingKeys: String, CodingKey {
-        case activityId = "activity_id"
-        case isKeep     = "is_keep"
+        case keepStatus = "keep_status"
     }
 }
 
