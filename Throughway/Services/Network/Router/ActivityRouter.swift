@@ -16,7 +16,7 @@ enum ActivityRouter: TargetType {
     case fetchList(country: String?, category: String?, next: String?, limit: Int?)
     case fetchDetail(activityId: String)
     case fetchNew(country: String?, category: String?)
-    case toggleKeep(activityId: String)
+    case toggleKeep(activityId: String, keepStatus: Bool)
     case search(query: String)
     case fetchMyKeeps
     case fetchUserReviews(userId: String)
@@ -30,7 +30,7 @@ extension ActivityRouter {
         switch self {
         case .fetchList:                     return "/v1/activities"
         case .fetchDetail(let id):           return "/v1/activities/\(id)"
-        case .toggleKeep(let id):            return "/v1/activities/\(id)/keep"
+        case .toggleKeep(let id, _):         return "/v1/activities/\(id)/keep"
         case .fetchNew:                      return "/v1/activities/new"
         case .search:                        return "/v1/activities/search"
         case .fetchMyKeeps:                  return "/v1/activities/keeps/me"
@@ -52,7 +52,12 @@ extension ActivityRouter {
     }
 
     var body: RequestBody {
-        .none
+        switch self {
+        case .toggleKeep(_, let keepStatus):
+            return .json(KeepToggleRequestDTO(keepStatus: keepStatus))
+        default:
+            return .none
+        }
     }
 
     var requiresAuthorization: Bool {

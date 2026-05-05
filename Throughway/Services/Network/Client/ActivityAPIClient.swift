@@ -12,7 +12,7 @@ struct ActivityAPIClient {
     var fetchNew:         @Sendable (String?, String?) async throws -> ActivityListResponseDTO
     var fetchDetail:      @Sendable (String) async throws -> ActivityDetailDTO
     var search:           @Sendable (String) async throws -> ActivitySearchResponseDTO
-    var toggleKeep:       @Sendable (String) async throws -> KeepToggleResponseDTO
+    var toggleKeep:       @Sendable (String, Bool) async throws -> KeepToggleResponseDTO
     var fetchMyKeeps:     @Sendable () async throws -> ActivityListResponseDTO
     var fetchUserReviews: @Sendable (String) async throws -> ActivityListResponseDTO
 }
@@ -33,8 +33,8 @@ extension ActivityAPIClient {
             search: { query in
                 try await network.request(ActivityRouter.search(query: query))
             },
-            toggleKeep: { id in
-                try await network.request(ActivityRouter.toggleKeep(activityId: id))
+            toggleKeep: { id, keepStatus in
+                try await network.request(ActivityRouter.toggleKeep(activityId: id, keepStatus: keepStatus))
             },
             fetchMyKeeps: {
                 try await network.request(ActivityRouter.fetchMyKeeps)
