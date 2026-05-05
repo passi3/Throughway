@@ -52,6 +52,7 @@ struct DetailView: View {
         .toolbar {
             ToolbarItem(placement: .navigationBarTrailing) {
                 Button {
+                    viewModel.send(.keepToggled)
                 } label: {
                     Image(systemName: viewModel.isKeep ? "heart.fill" : "heart")
                         .foregroundStyle(viewModel.isKeep ? Color.rosyPunch : Color.gray90)

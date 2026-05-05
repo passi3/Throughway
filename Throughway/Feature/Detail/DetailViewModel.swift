@@ -26,8 +26,8 @@ final class DetailViewModel: BaseViewModel<DetailFeature.State, DetailFeature.In
     var thumbnails: [String] { state.detail?.thumbnails ?? summary.thumbnails }
     var tags: [String] { state.detail?.tags ?? summary.tags }
     var price: ActivityPriceDTO { state.detail?.price ?? summary.price }
-    var keepCount: Int { state.detail?.keepCount ?? summary.keepCount }
-    var isKeep: Bool { state.detail?.isKeep ?? summary.isKeep }
+    var keepCount: Int { state.keepOverride?.keepCount ?? state.detail?.keepCount ?? summary.keepCount }
+    var isKeep: Bool { state.keepOverride?.isKeep ?? state.detail?.isKeep ?? summary.isKeep }
     var pointReward: Int { state.detail?.pointReward ?? summary.pointReward }
 
     var rating: Double? { state.detail?.rating }
@@ -68,6 +68,22 @@ final class DetailViewModel: BaseViewModel<DetailFeature.State, DetailFeature.In
 
         case .timeSelected(let time):
             reduce { $0.selectedTime = time }
+
+        case .keepToggled:
+            Task { await toggleKeep() }
+        }
+    }
+
+    private func toggleKeep() async {
+        let newIsKeep = !isKeep
+        let newCount = max(0, keepCount + (newIsKeep ? 1 : -1))
+        reduce { $0.keepOverride = (newIsKeep, newCount) }
+        do {
+            let response = try await activityClient.toggleKeep(summary.activityId, newIsKeep)
+            reduce { $0.keepOverride = (response.keepStatus, newCount) }
+        } catch {
+            reduce { $0.keepOverride = nil }
+            print("[Detail] toggleKeep failed: \(error.localizedDescription)")
         }
     }
 

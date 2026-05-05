@@ -13,11 +13,13 @@ enum DetailFeature {
         var isLoading: Bool = false
         var selectedDateIndex: Int = 0
         var selectedTime: String?
+        var keepOverride: (isKeep: Bool, keepCount: Int)? = nil
     }
 
     enum Intent: BaseIntent {
         case onAppear
         case dateSelected(Int)
         case timeSelected(String)
+        case keepToggled
     }
 }
