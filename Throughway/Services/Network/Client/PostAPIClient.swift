@@ -18,6 +18,9 @@ struct PostAPIClient {
     var toggleLike:         @Sendable (String, Bool) async throws -> LikeToggleResponseDTO
     var fetchUserPosts:     @Sendable (String) async throws -> PostListResponseDTO
     var fetchMyLikedPosts:  @Sendable () async throws -> PostListResponseDTO
+    var createComment:      @Sendable (String, CreateCommentRequestDTO) async throws -> CommentDTO
+    var deleteComment:      @Sendable (String, String) async throws -> Void
+    var updateComment:      @Sendable (String, String, UpdateCommentRequestDTO) async throws -> CommentDTO
 }
 
 extension PostAPIClient {
@@ -53,6 +56,15 @@ extension PostAPIClient {
             },
             fetchMyLikedPosts: {
                 try await network.request(PostRouter.fetchMyLikedPosts)
+            },
+            createComment: { postId, dto in
+                try await network.request(PostRouter.createComment(postId: postId, body: dto))
+            },
+            deleteComment: { postId, commentId in
+                try await network.request(PostRouter.deleteComment(postId: postId, commentId: commentId))
+            },
+            updateComment: { postId, commentId, dto in
+                try await network.request(PostRouter.updateComment(postId: postId, commentId: commentId, body: dto))
             }
         )
     }()

@@ -19,6 +19,9 @@ enum PostRouter: TargetType {
     case toggleLike(postId: String, body: LikeToggleRequestDTO)
     case fetchUserPosts(userId: String)
     case fetchMyLikedPosts
+    case createComment(postId: String, body: CreateCommentRequestDTO)
+    case deleteComment(postId: String, commentId: String)
+    case updateComment(postId: String, commentId: String, body: UpdateCommentRequestDTO)
 }
 
 // MARK: - TargetType 구현
@@ -31,22 +34,25 @@ extension PostRouter {
         case .createPost:               return "/v1/posts"
         case .fetchByGeolocation:       return "/v1/posts/geolocation"
         case .searchByTitle:            return "/v1/posts/search"
-        case .fetchDetail(let id):      return "/v1/posts/\(id)"
-        case .updatePost(let id, _):    return "/v1/posts/\(id)"
-        case .deletePost(let id):       return "/v1/posts/\(id)"
-        case .toggleLike(let id, _):    return "/v1/posts/\(id)/like"
-        case .fetchUserPosts(let id):   return "/v1/posts/users/\(id)"
-        case .fetchMyLikedPosts:        return "/v1/posts/likes/me"
+        case .fetchDetail(let id):              return "/v1/posts/\(id)"
+        case .updatePost(let id, _):            return "/v1/posts/\(id)"
+        case .deletePost(let id):               return "/v1/posts/\(id)"
+        case .toggleLike(let id, _):            return "/v1/posts/\(id)/like"
+        case .fetchUserPosts(let id):           return "/v1/posts/users/\(id)"
+        case .fetchMyLikedPosts:                return "/v1/posts/likes/me"
+        case .createComment(let id, _):                     return "/v1/posts/\(id)/comments"
+        case .deleteComment(let id, let cid):               return "/v1/posts/\(id)/comments/\(cid)"
+        case .updateComment(let id, let cid, _):            return "/v1/posts/\(id)/comments/\(cid)"
         }
     }
 
     var method: HTTPMethod {
         switch self {
-        case .uploadFiles, .createPost, .toggleLike:
+        case .uploadFiles, .createPost, .toggleLike, .createComment:
             return .post
-        case .updatePost:
+        case .updatePost, .updateComment:
             return .put
-        case .deletePost:
+        case .deletePost, .deleteComment:
             return .delete
         case .fetchByGeolocation, .searchByTitle, .fetchDetail, .fetchUserPosts, .fetchMyLikedPosts:
             return .get
@@ -64,6 +70,10 @@ extension PostRouter {
         case .updatePost(_, let dto):
             return .json(dto)
         case .toggleLike(_, let body):
+            return .json(body)
+        case .createComment(_, let body):
+            return .json(body)
+        case .updateComment(_, _, let body):
             return .json(body)
         case .uploadFiles(let dataList):
             let parts = dataList.enumerated().map { index, data in

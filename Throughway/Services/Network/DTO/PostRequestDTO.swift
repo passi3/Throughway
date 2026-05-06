@@ -27,6 +27,20 @@ struct UpdatePostRequestDTO: Encodable, Sendable {
     let files: [String]?
 }
 
+struct CreateCommentRequestDTO: Encodable, Sendable {
+    let content: String
+    let parentCommentId: String?
+
+    enum CodingKeys: String, CodingKey {
+        case content
+        case parentCommentId = "parent_comment_id"
+    }
+}
+
+struct UpdateCommentRequestDTO: Encodable, Sendable {
+    let content: String
+}
+
 struct LikeToggleRequestDTO: Encodable, Sendable {
     let likeStatus: Bool
 

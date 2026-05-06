@@ -7,6 +7,19 @@
 
 import Foundation
 
+struct PostActivityDTO: Decodable, Sendable {
+    let activityId: String
+
+    enum CodingKeys: String, CodingKey {
+        case activityId = "id"
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        activityId = container.decodeLossyString(forKey: .activityId)
+    }
+}
+
 struct PostDTO: Decodable, Sendable {
     let postId: String
     let country: String?
@@ -16,43 +29,52 @@ struct PostDTO: Decodable, Sendable {
     let files: [String]
     let isLike: Bool
     let likeCount: Int
+    let commentCount: Int
     let creator: PostCreatorDTO
-    let activityId: String?
+    let activity: PostActivityDTO?
     let geolocation: GeolocationDTO?
+    let comments: [CommentDTO]
     let createdAt: String
     let updatedAt: String?
 
+    var activityId: String? { activity?.activityId }
+    var displayCommentCount: Int { comments.reduce(0) { $0 + 1 + $1.replies.count } }
+
     enum CodingKeys: String, CodingKey {
-        case postId     = "post_id"
+        case postId       = "post_id"
         case country
         case category
         case title
         case content
         case files
-        case isLike     = "is_like"
-        case likeCount  = "like_count"
+        case isLike       = "is_like"
+        case likeCount    = "like_count"
+        case commentCount = "comment_count"
         case creator
-        case activityId = "activity_id"
+        case activity
         case geolocation
+        case comments
         case createdAt
         case updatedAt
     }
 
     init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
-        postId = container.decodeLossyString(forKey: .postId)
-        country = try container.decodeIfPresent(String.self, forKey: .country)
-        category = try container.decodeIfPresent(String.self, forKey: .category)
-        title = try container.decode(String.self, forKey: .title)
-        content = try container.decode(String.self, forKey: .content)
-        files = try container.decodeIfPresent([String].self, forKey: .files) ?? []
-        isLike = try container.decodeIfPresent(Bool.self, forKey: .isLike) ?? false
-        likeCount = try container.decodeIfPresent(Int.self, forKey: .likeCount) ?? 0
-        creator = try container.decode(PostCreatorDTO.self, forKey: .creator)
-        activityId = container.decodeLossyStringIfPresent(forKey: .activityId)
-        geolocation = try container.decodeIfPresent(GeolocationDTO.self, forKey: .geolocation)
-        createdAt = try container.decode(String.self, forKey: .createdAt)
-        updatedAt = try container.decodeIfPresent(String.self, forKey: .updatedAt)
+        postId        = container.decodeLossyString(forKey: .postId)
+        country       = try container.decodeIfPresent(String.self, forKey: .country)
+        category      = try container.decodeIfPresent(String.self, forKey: .category)
+        title         = try container.decode(String.self, forKey: .title)
+        content       = try container.decode(String.self, forKey: .content)
+        files         = try container.decodeIfPresent([String].self, forKey: .files) ?? []
+        isLike        = try container.decodeIfPresent(Bool.self, forKey: .isLike) ?? false
+        likeCount     = try container.decodeIfPresent(Int.self, forKey: .likeCount) ?? 0
+        commentCount  = try container.decodeIfPresent(Int.self, forKey: .commentCount) ?? 0
+        creator       = try container.decode(PostCreatorDTO.self, forKey: .creator)
+        activity      = try container.decodeIfPresent(PostActivityDTO.self, forKey: .activity)
+        geolocation   = try container.decodeIfPresent(GeolocationDTO.self, forKey: .geolocation)
+        comments      = try container.decodeIfPresent([CommentDTO].self, forKey: .comments) ?? []
+        createdAt     = try container.decode(String.self, forKey: .createdAt)
+        updatedAt     = try container.decodeIfPresent(String.self, forKey: .updatedAt)
     }
 }
 
@@ -112,6 +134,53 @@ struct LikeToggleResponseDTO: Decodable, Sendable {
 
     enum CodingKeys: String, CodingKey {
         case isLiked = "like_status"
+    }
+}
+
+struct ReplyDTO: Decodable, Sendable {
+    let commentId: String
+    let content: String
+    let creator: PostCreatorDTO
+    let createdAt: String
+
+    enum CodingKeys: String, CodingKey {
+        case commentId = "comment_id"
+        case content
+        case creator
+        case createdAt
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        commentId = container.decodeLossyString(forKey: .commentId)
+        content   = try container.decode(String.self, forKey: .content)
+        creator   = try container.decode(PostCreatorDTO.self, forKey: .creator)
+        createdAt = try container.decode(String.self, forKey: .createdAt)
+    }
+}
+
+struct CommentDTO: Decodable, Sendable {
+    let commentId: String
+    let content: String
+    let creator: PostCreatorDTO
+    let createdAt: String
+    let replies: [ReplyDTO]
+
+    enum CodingKeys: String, CodingKey {
+        case commentId = "comment_id"
+        case content
+        case creator
+        case createdAt
+        case replies
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        commentId = container.decodeLossyString(forKey: .commentId)
+        content   = try container.decode(String.self, forKey: .content)
+        creator   = try container.decode(PostCreatorDTO.self, forKey: .creator)
+        createdAt = try container.decode(String.self, forKey: .createdAt)
+        replies   = try container.decodeIfPresent([ReplyDTO].self, forKey: .replies) ?? []
     }
 }
 
