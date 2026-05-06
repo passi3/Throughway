@@ -22,6 +22,13 @@ struct PendingFile: Identifiable, Sendable {
     let mimeType: String
 }
 
+struct PendingMessage: Identifiable, Sendable {
+    let id: UUID
+    let content: String
+    let files: [PendingFile]
+    var isFailed: Bool = false
+}
+
 // MARK: - Feature
 
 enum ChatDetailFeature {
@@ -29,11 +36,12 @@ enum ChatDetailFeature {
         var messages: [ChatMessageDTO] = []
         var inputText: String = ""
         var isLoadingHistory: Bool = false
-        var isSending: Bool = false
         var myUserId: String = ""
         var updatedOpponentProfile: ChatParticipantDTO? = nil
         var pendingFiles: [PendingFile] = []
-        var fileUploadError: String? = nil
+        var pendingMessages: [PendingMessage] = []
+        var showSendFailedAlert: Bool = false
+        var showEmptyTextAlert: Bool = false
     }
 
     enum Intent: BaseIntent {
@@ -44,6 +52,9 @@ enum ChatDetailFeature {
         case dismissProfileUpdate
         case filesPicked([PendingFilePickResult])
         case removePendingFile(UUID)
-        case dismissFileUploadError
+        case retryPending(UUID)
+        case deletePending(UUID)
+        case dismissSendFailedAlert
+        case dismissEmptyTextAlert
     }
 }

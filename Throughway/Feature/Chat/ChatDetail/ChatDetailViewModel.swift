@@ -43,7 +43,7 @@ final class ChatDetailViewModel: BaseViewModel<ChatDetailFeature.State, ChatDeta
             reduce { $0.inputText = text }
 
         case .sendTapped:
-            Task { await sendMessage() }
+            sendMessage()
 
         case .dismissProfileUpdate:
             reduce { $0.updatedOpponentProfile = nil }
@@ -54,22 +54,35 @@ final class ChatDetailViewModel: BaseViewModel<ChatDetailFeature.State, ChatDeta
         case .removePendingFile(let id):
             reduce { $0.pendingFiles.removeAll { $0.id == id } }
 
-        case .dismissFileUploadError:
-            reduce { $0.fileUploadError = nil }
+        case .retryPending(let id):
+            guard let pending = state.pendingMessages.first(where: { $0.id == id }),
+                  pending.isFailed else { return }
+            reduce { s in
+                if let i = s.pendingMessages.firstIndex(where: { $0.id == id }) {
+                    s.pendingMessages[i].isFailed = false
+                }
+            }
+            Task { await _doSend(pending) }
+
+        case .deletePending(let id):
+            reduce { $0.pendingMessages.removeAll { $0.id == id } }
+
+        case .dismissSendFailedAlert:
+            reduce { $0.showSendFailedAlert = false }
+
+        case .dismissEmptyTextAlert:
+            reduce { $0.showEmptyTextAlert = false }
         }
     }
 
     // MARK: - Bootstrap: 로컬 DB → 서버 동기화 → 소켓 연결
 
     private func bootstrap() async {
-        // 0. 프로필 변경 감지
         checkProfileUpdate()
 
-        // 1. 로컬 DB 조회
         let local = chatRepo.fetchMessages(roomId: room.roomId)
         reduce { $0.messages = local }
 
-        // 2. 서버 동기화
         reduce { $0.isLoadingHistory = true }
         defer { reduce { $0.isLoadingHistory = false } }
 
@@ -85,7 +98,6 @@ final class ChatDetailViewModel: BaseViewModel<ChatDetailFeature.State, ChatDeta
             print("[ChatDetail] fetchMessages error:", error)
         }
 
-        // 3. 소켓 연결 (동기화 완료 후)
         let token = await tokenClient.loadAccessToken() ?? ""
         SocketIOManager.shared.connect(roomId: room.roomId, token: token)
         listenTask = Task { await listenForMessages() }
@@ -141,35 +153,49 @@ final class ChatDetailViewModel: BaseViewModel<ChatDetailFeature.State, ChatDeta
 
     // MARK: - 채팅 전송
 
-    private func sendMessage() async {
+    private func sendMessage() {
         let content = state.inputText.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !content.isEmpty else {
+            if !state.pendingFiles.isEmpty {
+                reduce { $0.showEmptyTextAlert = true }
+            }
+            return
+        }
+
         let files = state.pendingFiles
-        guard !content.isEmpty || !files.isEmpty else { return }
-        guard !state.isSending else { return }
+        let pending = PendingMessage(id: UUID(), content: content, files: files)
 
-        reduce { $0.inputText = "" }
-        reduce { $0.pendingFiles = [] }
-        reduce { $0.isSending = true }
-        defer { reduce { $0.isSending = false } }
+        reduce {
+            $0.inputText = ""
+            $0.pendingFiles = []
+            $0.pendingMessages.append(pending)
+        }
+        Task { await _doSend(pending) }
+    }
 
+    @MainActor
+    private func _doSend(_ pending: PendingMessage) async {
         do {
             var fileURLs: [String] = []
-            if !files.isEmpty {
-                let response = try await chatClient.uploadFiles(room.roomId, files)
+            if !pending.files.isEmpty {
+                let response = try await chatClient.uploadFiles(room.roomId, pending.files)
                 fileURLs = response.files
             }
-            let dto = SendMessageRequestDTO(content: content, files: fileURLs)
+            let dto = SendMessageRequestDTO(content: pending.content, files: fileURLs)
             let sent = try await chatClient.sendMessage(room.roomId, dto)
-            // 소켓 echo와 중복되지 않으면 추가
+            reduce { $0.pendingMessages.removeAll { $0.id == pending.id } }
             if !state.messages.contains(where: { $0.chatId == sent.chatId }) {
                 chatRepo.save(message: sent)
                 reduce { $0.messages.append(sent) }
             }
         } catch {
             print("[ChatDetail] sendMessage error:", error)
-            reduce { $0.inputText = content }
-            reduce { $0.pendingFiles = files }
-            reduce { $0.fileUploadError = "파일 전송에 실패했습니다." }
+            reduce { s in
+                if let i = s.pendingMessages.firstIndex(where: { $0.id == pending.id }) {
+                    s.pendingMessages[i].isFailed = true
+                }
+                s.showSendFailedAlert = true
+            }
         }
     }
 }

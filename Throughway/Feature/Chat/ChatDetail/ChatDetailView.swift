@@ -9,11 +9,16 @@ import SwiftUI
 import Kingfisher
 import UniformTypeIdentifiers
 import UIKit
+import PhotosUI
 
 struct ChatDetailView: View {
     @StateObject private var viewModel: ChatDetailViewModel
     private let room: ChatRoomDTO
     @State private var showFilePicker = false
+    @State private var showAttachmentMenu = false
+    @State private var selectedPhotoItems: [PhotosPickerItem] = []
+    @State private var selectedImageIndex: Int? = nil
+    @FocusState private var isTextFieldFocused: Bool
 
     init(room: ChatRoomDTO, myUserId: String) {
         self.room = room
@@ -55,17 +60,42 @@ struct ChatDetailView: View {
             }
             viewModel.send(.filesPicked(picked))
         }
-        .alert(
-            "오류",
-            isPresented: Binding(
-                get: { viewModel.state.fileUploadError != nil },
-                set: { if !$0 { viewModel.send(.dismissFileUploadError) } }
-            ),
-            presenting: viewModel.state.fileUploadError
-        ) { _ in
-            Button("확인") { viewModel.send(.dismissFileUploadError) }
-        } message: { msg in
-            Text(msg)
+        .fullScreenCover(isPresented: Binding(
+            get: { selectedImageIndex != nil },
+            set: { if !$0 { selectedImageIndex = nil } }
+        )) {
+            if let index = selectedImageIndex {
+                ImageViewerView(items: allImageItems, initialIndex: index) {
+                    selectedImageIndex = nil
+                }
+            }
+        }
+        .alert("메시지를 입력해주세요", isPresented: Binding(
+            get: { viewModel.state.showEmptyTextAlert },
+            set: { if !$0 { viewModel.send(.dismissEmptyTextAlert) } }
+        )) {
+            Button("확인", role: .cancel) { viewModel.send(.dismissEmptyTextAlert) }
+        } message: {
+            Text("파일을 전송할 때는 메시지를 함께 입력해야 합니다.")
+        }
+        .alert("전송 실패", isPresented: Binding(
+            get: { viewModel.state.showSendFailedAlert },
+            set: { if !$0 { viewModel.send(.dismissSendFailedAlert) } }
+        )) {
+            Button("확인", role: .cancel) { viewModel.send(.dismissSendFailedAlert) }
+        } message: {
+            Text("전송에 실패했습니다.")
+        }
+    }
+
+    private var allImageItems: [ImageViewerItem] {
+        viewModel.state.messages.flatMap { msg in
+            msg.files
+                .filter { !$0.lowercased().hasSuffix(".pdf") }
+                .compactMap { path -> ImageViewerItem? in
+                    guard let url = path.serverImageURL else { return nil }
+                    return ImageViewerItem(url: url, senderNick: msg.sender.nick, createdAt: msg.createdAt)
+                }
         }
     }
 
@@ -87,8 +117,20 @@ struct ChatDetailView: View {
                             message: info.message,
                             isOwn: info.isOwn,
                             showProfile: info.showProfile,
-                            showTime: info.showTime
+                            showTime: info.showTime,
+                            onImageTapped: { url in
+                                if let index = allImageItems.firstIndex(where: { $0.url == url }) {
+                                    selectedImageIndex = index
+                                }
+                            }
                         )
+                    }
+                    ForEach(viewModel.state.pendingMessages) { pending in
+                        PendingMessageBubbleView(pending: pending) { id in
+                            viewModel.send(.retryPending(id))
+                        } onDelete: { id in
+                            viewModel.send(.deletePending(id))
+                        }
                     }
                     Color.clear
                         .frame(height: 1)
@@ -98,6 +140,9 @@ struct ChatDetailView: View {
                 .padding(.vertical, 12)
             }
             .onChange(of: viewModel.state.messages.count) {
+                withAnimation { proxy.scrollTo("bottom") }
+            }
+            .onChange(of: viewModel.state.pendingMessages.count) {
                 withAnimation { proxy.scrollTo("bottom") }
             }
         }
@@ -136,11 +181,50 @@ struct ChatDetailView: View {
                     .padding(.horizontal, 16)
                     .padding(.top, 8)
             }
+            if showAttachmentMenu {
+                HStack(spacing: 24) {
+                    PhotosPicker(
+                        selection: $selectedPhotoItems,
+                        maxSelectionCount: max(0, 5 - viewModel.state.pendingFiles.count),
+                        matching: .images
+                    ) {
+                        attachmentMenuButton(icon: "photo.fill", label: "사진 첨부")
+                    }
+                    .onChange(of: selectedPhotoItems) { _, items in
+                        Task {
+                            var picked: [PendingFilePickResult] = []
+                            for item in items {
+                                guard let data = try? await item.loadTransferable(type: Data.self) else { continue }
+                                let ext = item.supportedContentTypes.first?.preferredFilenameExtension ?? "jpg"
+                                let name = "\(UUID().uuidString).\(ext)"
+                                picked.append(PendingFilePickResult(data: data, fileName: name, ext: ext))
+                            }
+                            selectedPhotoItems = []
+                            if !picked.isEmpty {
+                                viewModel.send(.filesPicked(picked))
+                                isTextFieldFocused = true
+                            }
+                            withAnimation(.spring(response: 0.3)) { showAttachmentMenu = false }
+                        }
+                    }
+
+                    Button {
+                        showFilePicker = true
+                        withAnimation(.spring(response: 0.3)) { showAttachmentMenu = false }
+                        isTextFieldFocused = true
+                    } label: {
+                        attachmentMenuButton(icon: "doc.fill", label: "파일 첨부")
+                    }
+                }
+                .padding(.horizontal, 24)
+                .padding(.vertical, 12)
+                .transition(.move(edge: .bottom).combined(with: .opacity))
+            }
             HStack(spacing: 12) {
                 Button {
-                    showFilePicker = true
+                    withAnimation(.spring(response: 0.3)) { showAttachmentMenu.toggle() }
                 } label: {
-                    Image(systemName: "paperclip")
+                    Image(systemName: showAttachmentMenu ? "xmark" : "plus")
                         .font(.system(size: 20))
                         .foregroundStyle(Color.gray60)
                 }
@@ -153,30 +237,22 @@ struct ChatDetailView: View {
                 .lineLimit(1...3)
                 .submitLabel(.send)
                 .onSubmit { viewModel.send(.sendTapped) }
+                .focused($isTextFieldFocused)
                 .font(.Pretendard.body2)
                 .padding(.horizontal, 12)
                 .padding(.vertical, 8)
                 .background(Color.gray15)
                 .clipShape(RoundedRectangle(cornerRadius: 20))
 
+                let hasText = !viewModel.state.inputText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
                 Button {
                     viewModel.send(.sendTapped)
                 } label: {
                     Image(systemName: "paperplane.fill")
                         .font(.system(size: 20))
-                        .foregroundStyle(
-                            (viewModel.state.inputText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-                             && viewModel.state.pendingFiles.isEmpty)
-                            || viewModel.state.isSending
-                            ? Color.gray30
-                            : Color.blackSeafoam
-                        )
+                        .foregroundStyle(hasText ? Color.blackSeafoam : Color.gray30)
                 }
-                .disabled(
-                    (viewModel.state.inputText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-                     && viewModel.state.pendingFiles.isEmpty)
-                    || viewModel.state.isSending
-                )
+                .disabled(!hasText)
             }
             .padding(.horizontal, 16)
             .padding(.vertical, 12)
@@ -184,6 +260,22 @@ struct ChatDetailView: View {
         .background(Color.gray0)
         .overlay(alignment: .top) {
             Divider()
+        }
+    }
+
+    private func attachmentMenuButton(icon: String, label: String) -> some View {
+        VStack(spacing: 6) {
+            Circle()
+                .fill(Color.gray15)
+                .frame(width: 52, height: 52)
+                .overlay {
+                    Image(systemName: icon)
+                        .font(.system(size: 22))
+                        .foregroundStyle(Color.gray60)
+                }
+            Text(label)
+                .font(.Pretendard.caption2)
+                .foregroundStyle(Color.gray60)
         }
     }
 
@@ -295,6 +387,7 @@ private struct MessageBubbleView: View {
     let isOwn: Bool
     let showProfile: Bool
     let showTime: Bool
+    var onImageTapped: ((URL) -> Void)? = nil
 
     @State private var isExpanded = false
 
@@ -378,6 +471,7 @@ private struct MessageBubbleView: View {
                                 .scaledToFill()
                                 .frame(width: 100, height: 100)
                                 .clipShape(RoundedRectangle(cornerRadius: 8))
+                                .onTapGesture { onImageTapped?(url) }
                         }
                     }
                 }
@@ -474,6 +568,157 @@ private struct PendingFileChip: View {
                     .background(Color.gray0, in: Circle())
             }
             .offset(x: 6, y: -6)
+        }
+    }
+}
+
+// MARK: - Pending Message Bubble
+
+private struct PendingMessageBubbleView: View {
+    let pending: PendingMessage
+    let onRetry: (UUID) -> Void
+    let onDelete: (UUID) -> Void
+
+    var body: some View {
+        HStack(alignment: .bottom, spacing: 8) {
+            Spacer(minLength: 60)
+
+            if pending.isFailed {
+                HStack(spacing: 12) {
+                    Button { onRetry(pending.id) } label: {
+                        Image(systemName: "arrow.clockwise")
+                            .font(.system(size: 14, weight: .medium))
+                            .foregroundStyle(Color.gray60)
+                    }
+                    Button { onDelete(pending.id) } label: {
+                        Image(systemName: "trash")
+                            .font(.system(size: 14, weight: .medium))
+                            .foregroundStyle(Color.red.opacity(0.8))
+                    }
+                }
+            } else {
+                ProgressView()
+                    .scaleEffect(0.7)
+            }
+
+            VStack(alignment: .trailing, spacing: 6) {
+                if !pending.files.isEmpty {
+                    pendingFilesPreview
+                }
+                if !pending.content.isEmpty {
+                    Text(pending.content)
+                        .font(.Pretendard.body2)
+                        .foregroundStyle(.white)
+                }
+            }
+            .padding(.horizontal, 12)
+            .padding(.vertical, 8)
+            .background(pending.isFailed ? Color.gray45 : Color.blackSeafoam)
+            .clipShape(RoundedRectangle(cornerRadius: 16))
+            .opacity(pending.isFailed ? 0.6 : 1)
+        }
+        .padding(.top, 8)
+    }
+
+    private var pendingFilesPreview: some View {
+        let imageFiles = pending.files.filter { $0.mimeType.hasPrefix("image/") }
+        let otherFiles = pending.files.filter { !$0.mimeType.hasPrefix("image/") }
+        let columns = [GridItem(.flexible()), GridItem(.flexible())]
+
+        return VStack(alignment: .trailing, spacing: 4) {
+            if !imageFiles.isEmpty {
+                LazyVGrid(columns: columns, spacing: 4) {
+                    ForEach(imageFiles) { file in
+                        if let uiImage = UIImage(data: file.data) {
+                            Image(uiImage: uiImage)
+                                .resizable()
+                                .scaledToFill()
+                                .frame(width: 100, height: 100)
+                                .clipShape(RoundedRectangle(cornerRadius: 8))
+                        }
+                    }
+                }
+            }
+            ForEach(otherFiles) { file in
+                HStack(spacing: 6) {
+                    Image(systemName: "doc.fill")
+                        .foregroundStyle(.white)
+                    Text(file.fileName)
+                        .font(.Pretendard.caption1)
+                        .foregroundStyle(.white)
+                        .lineLimit(1)
+                }
+                .padding(.horizontal, 8)
+                .padding(.vertical, 4)
+                .background(Color.white.opacity(0.15))
+                .clipShape(RoundedRectangle(cornerRadius: 6))
+            }
+        }
+    }
+}
+
+// MARK: - Image Viewer
+
+struct ImageViewerItem {
+    let url: URL
+    let senderNick: String
+    let createdAt: String
+}
+
+private struct ImageViewerView: View {
+    let items: [ImageViewerItem]
+    let initialIndex: Int
+    let onDismiss: () -> Void
+
+    @State private var currentIndex: Int
+
+    init(items: [ImageViewerItem], initialIndex: Int, onDismiss: @escaping () -> Void) {
+        self.items = items
+        self.initialIndex = initialIndex
+        self.onDismiss = onDismiss
+        _currentIndex = State(initialValue: initialIndex)
+    }
+
+    var body: some View {
+        ZStack(alignment: .top) {
+            Color.black.ignoresSafeArea()
+
+            TabView(selection: $currentIndex) {
+                ForEach(items.indices, id: \.self) { i in
+                    KFImage(items[i].url)
+                        .requestModifier(AuthImageModifier())
+                        .resizable()
+                        .scaledToFit()
+                        .tag(i)
+                }
+            }
+            .tabViewStyle(.page(indexDisplayMode: .never))
+
+            HStack(alignment: .top) {
+                Button(action: onDismiss) {
+                    Image(systemName: "xmark")
+                        .font(.system(size: 15, weight: .semibold))
+                        .foregroundStyle(.white)
+                        .padding(10)
+                        .background(Color.white.opacity(0.2), in: Circle())
+                }
+
+                Spacer()
+
+                if !items.isEmpty {
+                    VStack(alignment: .trailing, spacing: 3) {
+                        Text(items[currentIndex].senderNick)
+                            .font(.Pretendard.caption1)
+                            .fontWeight(.semibold)
+                            .foregroundStyle(.white)
+                        Text(items[currentIndex].createdAt.dayLabel)
+                            .font(.Pretendard.caption2)
+                            .foregroundStyle(.white.opacity(0.7))
+                    }
+                }
+            }
+            .padding(.horizontal, 16)
+            .padding(.top, 12)
         }
     }
 }
