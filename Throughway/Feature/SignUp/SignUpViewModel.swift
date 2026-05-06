@@ -130,6 +130,7 @@ final class SignUpViewModel: BaseViewModel<SignUpFeature.State, SignUpFeature.In
         )
         do {
             let response = try await userAPIClient.join(request)
+            AppSession.userId = response.userId
             onAuthenticated?(response.tokens)
         } catch {
             // TODO: 에러 처리
