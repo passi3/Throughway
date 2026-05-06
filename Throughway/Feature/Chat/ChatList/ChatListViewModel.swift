@@ -51,18 +51,23 @@ final class ChatListViewModel: BaseViewModel<ChatListFeature.State, ChatListFeat
 
         case .openRoom(let roomId):
             Task { await openRoom(roomId: roomId) }
+
+        case .deleteRoom(let room):
+            chatRepo.deleteMessages(roomId: room.roomId)
+            reduce { $0.rooms.removeAll { $0.roomId == room.roomId }
+                     $0.roomLastMessages.removeValue(forKey: room.roomId) }
         }
     }
 
     private func loadMyUserId() async {
         guard state.myUserId.isEmpty else { return }
-        if let cached = UserDefaults.standard.string(forKey: "myUserId"), !cached.isEmpty {
-            reduce { $0.myUserId = cached }
+        if !AppSession.userId.isEmpty {
+            reduce { $0.myUserId = AppSession.userId }
             return
         }
         do {
             let profile = try await userClient.fetchMyProfile()
-            UserDefaults.standard.set(profile.userId, forKey: "myUserId")
+            AppSession.userId = profile.userId
             reduce { $0.myUserId = profile.userId }
         } catch {
             print("[ChatList] loadMyUserId error:", error)
@@ -74,7 +79,9 @@ final class ChatListViewModel: BaseViewModel<ChatListFeature.State, ChatListFeat
         defer { reduce { $0.isLoading = false } }
         do {
             let response = try await chatClient.fetchRooms()
-            let sorted = response.data.sorted { $0.updatedAt > $1.updatedAt }
+            let sorted = response.data
+                .filter { $0.lastChat != nil || chatRepo.lastMessage(roomId: $0.roomId) != nil }
+                .sorted { $0.updatedAt > $1.updatedAt }
             var localMap: [String: ChatMessageDTO] = [:]
             for room in sorted {
                 if let msg = chatRepo.lastMessage(roomId: room.roomId) {

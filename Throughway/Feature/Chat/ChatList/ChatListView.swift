@@ -14,6 +14,7 @@ struct ChatListView: View {
     @StateObject private var viewModel = ChatListViewModel()
     @State private var isSearchPresented = false
     @State private var pendingRoom: ChatRoomDTO?
+    @State private var roomToDelete: ChatRoomDTO?
     @State private var isActive = false
     @Environment(\.scenePhase) private var scenePhase
 
@@ -71,6 +72,17 @@ struct ChatListView: View {
             deepLinkRoomId = nil
             viewModel.send(.openRoom(roomId: roomId))
         }
+        .alert("채팅 내역 삭제", isPresented: Binding(
+            get: { roomToDelete != nil },
+            set: { if !$0 { roomToDelete = nil } }
+        ), presenting: roomToDelete) { room in
+            Button("삭제", role: .destructive) {
+                viewModel.send(.deleteRoom(room))
+            }
+            Button("취소", role: .cancel) {}
+        } message: { _ in
+            Text("채팅 내역이 삭제됩니다.\n상대방과의 대화는 유지됩니다.")
+        }
         .fullScreenCover(isPresented: $isSearchPresented) {
             UserSearchView(myUserId: viewModel.state.myUserId) { room in
                 pendingRoom = room
@@ -98,6 +110,13 @@ struct ChatListView: View {
             }
             .listRowBackground(Color.gray0)
             .listRowSeparatorTint(Color.gray15)
+            .swipeActions(edge: .trailing, allowsFullSwipe: false) {
+                Button(role: .destructive) {
+                    roomToDelete = room
+                } label: {
+                    Label("삭제", systemImage: "trash")
+                }
+            }
         }
         .listStyle(.plain)
         .refreshable { viewModel.send(.refresh) }

@@ -24,5 +24,6 @@ enum ChatListFeature {
         case roomTapped(ChatRoomDTO)
         case clearSelection
         case openRoom(roomId: String)
+        case deleteRoom(ChatRoomDTO)
     }
 }
