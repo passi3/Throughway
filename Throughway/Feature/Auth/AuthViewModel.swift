@@ -227,6 +227,7 @@ final class AuthViewModel: BaseViewModel<AuthFeature.State, AuthFeature.Intent> 
         reduce { $0.phase = .loading }
         do { try await userAPIClient.logout() } catch {}
         ChatRepository().deleteAll()
+        AppSession.userId = ""
         await tokenClient.clear()
         resetToUnauthenticated()
     }

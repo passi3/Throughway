@@ -59,6 +59,7 @@ final class LoginViewModel: BaseViewModel<LoginFeature.State, LoginFeature.Inten
         let request = LoginRequestDTO(email: state.email, password: state.password)
         do {
             let response = try await userAPIClient.login(request)
+            AppSession.userId = response.userId
             onAuthenticated?(response.tokens)
         } catch {
             // TODO: 에러 처리
