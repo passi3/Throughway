@@ -459,7 +459,7 @@ private extension PostDetailOverlayView {
     }
 
     func relativeTime(from dateString: String) -> String {
-        guard let date = AppFormatter.iso8601.date(from: dateString) else { return "" }
+        guard let date = AppDateFormatter.iso8601.date(from: dateString) else { return "" }
         let elapsed = Date().timeIntervalSince(date)
         if elapsed < 60    { return "방금 전" }
         if elapsed < 3600  { return "\(Int(elapsed / 60))분 전" }

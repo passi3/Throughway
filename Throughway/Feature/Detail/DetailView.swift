@@ -346,8 +346,8 @@ private extension DetailView {
                             Button {
                                 viewModel.send(.dateSelected(index))
                             } label: {
-                                let display = AppFormatter.serverDate.date(from: dateStr)
-                                    .map { AppFormatter.chipDate.string(from: $0) } ?? dateStr
+                                let display = AppDateFormatter.serverDate.date(from: dateStr)
+                                    .map { AppDateFormatter.chipDate.string(from: $0) } ?? dateStr
                                 Text(display)
                                     .font(.Pretendard.caption1)
                                     .fontWeight(viewModel.state.selectedDateIndex == index ? .semibold : .regular)
