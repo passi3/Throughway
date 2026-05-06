@@ -10,6 +10,7 @@ import Kingfisher
 import UniformTypeIdentifiers
 import UIKit
 import PhotosUI
+import PDFKit
 
 struct ChatDetailView: View {
     @StateObject private var viewModel: ChatDetailViewModel
@@ -18,6 +19,7 @@ struct ChatDetailView: View {
     @State private var showAttachmentMenu = false
     @State private var selectedPhotoItems: [PhotosPickerItem] = []
     @State private var selectedImageIndex: Int? = nil
+    @State private var pdfPreviewItem: PDFPreviewItem? = nil
     @FocusState private var isTextFieldFocused: Bool
 
     init(room: ChatRoomDTO, myUserId: String) {
@@ -68,6 +70,11 @@ struct ChatDetailView: View {
                 ImageViewerView(items: allImageItems, initialIndex: index) {
                     selectedImageIndex = nil
                 }
+            }
+        }
+        .fullScreenCover(item: $pdfPreviewItem) { item in
+            PDFPreviewView(item: item) {
+                pdfPreviewItem = nil
             }
         }
         .alert("메시지를 입력해주세요", isPresented: Binding(
@@ -122,6 +129,9 @@ struct ChatDetailView: View {
                                 if let index = allImageItems.firstIndex(where: { $0.url == url }) {
                                     selectedImageIndex = index
                                 }
+                            },
+                            onPDFTapped: { path, msg in
+                                Task { await openPDF(path: path, message: msg) }
                             }
                         )
                     }
@@ -279,6 +289,27 @@ struct ChatDetailView: View {
         }
     }
 
+    @MainActor
+    private func openPDF(path: String, message: ChatMessageDTO) async {
+        guard let serverURL = path.serverImageURL else { return }
+        var request = URLRequest(url: serverURL)
+        request.setValue(APIConstants.sesacKey, forHTTPHeaderField: "SeSACKey")
+        if let token = await TokenClient.live.loadAccessToken() {
+            request.setValue(token, forHTTPHeaderField: "Authorization")
+        }
+        guard let (data, _) = try? await URLSession.shared.data(for: request) else { return }
+        let tempURL = FileManager.default.temporaryDirectory
+            .appendingPathComponent(UUID().uuidString)
+            .appendingPathExtension("pdf")
+        guard (try? data.write(to: tempURL)) != nil else { return }
+        pdfPreviewItem = PDFPreviewItem(
+            id: UUID(),
+            localURL: tempURL,
+            senderNick: message.sender.nick,
+            createdAt: message.createdAt
+        )
+    }
+
     private var filePreviewStrip: some View {
         ScrollView(.horizontal, showsIndicators: false) {
             HStack(spacing: 8) {
@@ -388,13 +419,14 @@ private struct MessageBubbleView: View {
     let showProfile: Bool
     let showTime: Bool
     var onImageTapped: ((URL) -> Void)? = nil
+    var onPDFTapped: ((String, ChatMessageDTO) -> Void)? = nil
 
     @State private var isExpanded = false
 
     private static let truncationLimit = 300
 
     var body: some View {
-        HStack(alignment: .bottom, spacing: 8) {
+        HStack(alignment: isOwn ? .bottom : .top, spacing: 8) {
             if isOwn {
                 Spacer(minLength: 60)
                 timeLabel
@@ -458,38 +490,90 @@ private struct MessageBubbleView: View {
     private var filesGrid: some View {
         let imageFiles = message.files.filter { !$0.lowercased().hasSuffix(".pdf") }
         let pdfFiles   = message.files.filter {  $0.lowercased().hasSuffix(".pdf") }
-        let columns    = [GridItem(.flexible()), GridItem(.flexible())]
 
-        return VStack(alignment: isOwn ? .trailing : .leading, spacing: 4) {
+        let thumbSize: CGFloat = 56
+        let visibleImages = Array(imageFiles.prefix(3))
+        let extraCount = imageFiles.count - 3
+        let imageCount = CGFloat(visibleImages.filter { $0.serverImageURL != nil }.count)
+        let rowWidth = thumbSize * imageCount + 4 * max(imageCount - 1, 0)
+
+        return VStack(alignment: .leading, spacing: 6) {
             if !imageFiles.isEmpty {
-                LazyVGrid(columns: columns, spacing: 4) {
-                    ForEach(imageFiles, id: \.self) { path in
-                        if let url = path.serverImageURL {
-                            KFImage(url)
-                                .requestModifier(AuthImageModifier())
-                                .resizable()
-                                .scaledToFill()
-                                .frame(width: 100, height: 100)
-                                .clipShape(RoundedRectangle(cornerRadius: 8))
+                VStack(alignment: .leading, spacing: 4) {
+                    HStack(spacing: 4) {
+                        ForEach(visibleImages.indices, id: \.self) { i in
+                            let path = visibleImages[i]
+                            if let url = path.serverImageURL {
+                                let isLast = i == 2 && extraCount > 0
+                                ZStack {
+                                    KFImage(url)
+                                        .requestModifier(AuthImageModifier())
+                                        .resizable()
+                                        .scaledToFill()
+                                        .frame(width: thumbSize, height: thumbSize)
+                                        .clipShape(RoundedRectangle(cornerRadius: 8))
+                                    if isLast {
+                                        RoundedRectangle(cornerRadius: 8)
+                                            .fill(Color.black.opacity(0.45))
+                                            .frame(width: thumbSize, height: thumbSize)
+                                        Image(systemName: "plus")
+                                            .font(.system(size: 22, weight: .semibold))
+                                            .foregroundStyle(.white)
+                                    }
+                                }
                                 .onTapGesture { onImageTapped?(url) }
+                            }
                         }
                     }
                 }
+                .frame(width: rowWidth)
             }
 
             ForEach(pdfFiles, id: \.self) { path in
-                HStack(spacing: 6) {
-                    Image(systemName: "doc.fill")
-                        .foregroundStyle(isOwn ? .white : Color.gray60)
-                    Text((path as NSString).lastPathComponent)
-                        .font(.Pretendard.caption1)
-                        .foregroundStyle(isOwn ? .white : Color.gray90)
-                        .lineLimit(1)
+                let fileName = (path as NSString).lastPathComponent
+                VStack(spacing: 0) {
+                    HStack(spacing: 12) {
+                        ZStack {
+                            RoundedRectangle(cornerRadius: 8)
+                                .fill(Color.red.opacity(0.12))
+                                .frame(width: 44, height: 44)
+                            Image(systemName: "doc.richtext.fill")
+                                .font(.system(size: 22))
+                                .foregroundStyle(Color.red.opacity(0.7))
+                        }
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(fileName)
+                                .font(.Pretendard.caption1)
+                                .fontWeight(.medium)
+                                .foregroundStyle(isOwn ? .white : Color.gray90)
+                                .lineLimit(2)
+                            Text("PDF")
+                                .font(.Pretendard.caption2)
+                                .foregroundStyle(isOwn ? .white.opacity(0.6) : Color.gray45)
+                        }
+                        Spacer()
+                    }
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 10)
+
+                    Divider()
+                        .overlay(isOwn ? Color.white.opacity(0.2) : Color.clear)
+
+                    HStack {
+                        Text(message.sender.nick)
+                            .font(.Pretendard.caption2)
+                            .foregroundStyle(isOwn ? .white.opacity(0.8) : Color.gray60)
+                        Spacer()
+                        Text(message.createdAt.attachmentDateLabel)
+                            .font(.Pretendard.caption2)
+                            .foregroundStyle(isOwn ? .white.opacity(0.6) : Color.gray45)
+                    }
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 6)
                 }
-                .padding(.horizontal, 8)
-                .padding(.vertical, 4)
                 .background(isOwn ? Color.white.opacity(0.15) : Color.gray15)
-                .clipShape(RoundedRectangle(cornerRadius: 6))
+                .clipShape(RoundedRectangle(cornerRadius: 10))
+                .onTapGesture { onPDFTapped?(path, message) }
             }
         }
     }
@@ -657,6 +741,78 @@ private struct PendingMessageBubbleView: View {
     }
 }
 
+// MARK: - PDF Preview
+
+struct PDFPreviewItem: Identifiable {
+    let id: UUID
+    let localURL: URL
+    let senderNick: String
+    let createdAt: String
+}
+
+private struct PDFKitView: UIViewRepresentable {
+    let url: URL
+
+    func makeUIView(context: Context) -> PDFView {
+        let pdfView = PDFView()
+        pdfView.autoScales = true
+        pdfView.displayMode = .singlePageContinuous
+        pdfView.backgroundColor = .black
+        if let document = PDFDocument(url: url) {
+            pdfView.document = document
+        }
+        return pdfView
+    }
+
+    func updateUIView(_ uiView: PDFView, context: Context) {}
+}
+
+private struct PDFPreviewView: View {
+    let item: PDFPreviewItem
+    let onDismiss: () -> Void
+
+    @State private var showInfo = true
+
+    var body: some View {
+        ZStack(alignment: .top) {
+            Color.black.ignoresSafeArea()
+                .onTapGesture {
+                    withAnimation(.easeInOut(duration: 0.25)) { showInfo.toggle() }
+                }
+
+            PDFKitView(url: item.localURL)
+                .ignoresSafeArea(edges: .bottom)
+
+            if showInfo {
+                HStack(alignment: .top) {
+                    Button(action: onDismiss) {
+                        Image(systemName: "xmark")
+                            .font(.system(size: 15, weight: .semibold))
+                            .foregroundStyle(.white)
+                            .padding(10)
+                            .background(Color.white.opacity(0.2), in: Circle())
+                    }
+
+                    Spacer()
+
+                    VStack(alignment: .trailing, spacing: 3) {
+                        Text(item.senderNick)
+                            .font(.Pretendard.caption1)
+                            .fontWeight(.semibold)
+                            .foregroundStyle(.white)
+                        Text(item.createdAt.dayLabel)
+                            .font(.Pretendard.caption2)
+                            .foregroundStyle(.white.opacity(0.7))
+                    }
+                }
+                .padding(.horizontal, 16)
+                .padding(.top, 12)
+                .transition(.opacity)
+            }
+        }
+    }
+}
+
 // MARK: - Image Viewer
 
 struct ImageViewerItem {
@@ -671,6 +827,7 @@ private struct ImageViewerView: View {
     let onDismiss: () -> Void
 
     @State private var currentIndex: Int
+    @State private var showInfo = true
 
     init(items: [ImageViewerItem], initialIndex: Int, onDismiss: @escaping () -> Void) {
         self.items = items
@@ -682,6 +839,9 @@ private struct ImageViewerView: View {
     var body: some View {
         ZStack(alignment: .top) {
             Color.black.ignoresSafeArea()
+                .onTapGesture {
+                    withAnimation(.easeInOut(duration: 0.25)) { showInfo.toggle() }
+                }
 
             TabView(selection: $currentIndex) {
                 ForEach(items.indices, id: \.self) { i in
@@ -693,32 +853,36 @@ private struct ImageViewerView: View {
                 }
             }
             .tabViewStyle(.page(indexDisplayMode: .never))
+            .allowsHitTesting(true)
 
-            HStack(alignment: .top) {
-                Button(action: onDismiss) {
-                    Image(systemName: "xmark")
-                        .font(.system(size: 15, weight: .semibold))
-                        .foregroundStyle(.white)
-                        .padding(10)
-                        .background(Color.white.opacity(0.2), in: Circle())
-                }
-
-                Spacer()
-
-                if !items.isEmpty {
-                    VStack(alignment: .trailing, spacing: 3) {
-                        Text(items[currentIndex].senderNick)
-                            .font(.Pretendard.caption1)
-                            .fontWeight(.semibold)
+            if showInfo {
+                HStack(alignment: .top) {
+                    Button(action: onDismiss) {
+                        Image(systemName: "xmark")
+                            .font(.system(size: 15, weight: .semibold))
                             .foregroundStyle(.white)
-                        Text(items[currentIndex].createdAt.dayLabel)
-                            .font(.Pretendard.caption2)
-                            .foregroundStyle(.white.opacity(0.7))
+                            .padding(10)
+                            .background(Color.white.opacity(0.2), in: Circle())
+                    }
+
+                    Spacer()
+
+                    if !items.isEmpty {
+                        VStack(alignment: .trailing, spacing: 3) {
+                            Text(items[currentIndex].senderNick)
+                                .font(.Pretendard.caption1)
+                                .fontWeight(.semibold)
+                                .foregroundStyle(.white)
+                            Text(items[currentIndex].createdAt.dayLabel)
+                                .font(.Pretendard.caption2)
+                                .foregroundStyle(.white.opacity(0.7))
+                        }
                     }
                 }
+                .padding(.horizontal, 16)
+                .padding(.top, 12)
+                .transition(.opacity)
             }
-            .padding(.horizontal, 16)
-            .padding(.top, 12)
         }
     }
 }
@@ -728,48 +892,33 @@ private struct ImageViewerView: View {
 private extension String {
     /// "yyyy-MM-dd" — 날짜 변경 감지 키
     var dayKey: String {
-        let fmt = ISO8601DateFormatter()
-        fmt.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
-        guard let date = fmt.date(from: self) else { return self }
-        let f = DateFormatter()
-        f.dateFormat = "yyyy-MM-dd"
-        return f.string(from: date)
+        guard let date = AppDateFormatter.iso8601.date(from: self) else { return self }
+        return AppDateFormatter.serverDate.string(from: date)
     }
 
     /// "2026년 5월 3일 토요일" — 날짜 구분선 표시용
     var dayLabel: String {
-        let fmt = ISO8601DateFormatter()
-        fmt.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
-        guard let date = fmt.date(from: self) else { return self }
-        let f = DateFormatter()
-        f.locale = Locale(identifier: "ko_KR")
-        f.dateFormat = "yyyy년 M월 d일 EEEE"
-        return f.string(from: date)
+        guard let date = AppDateFormatter.iso8601.date(from: self) else { return self }
+        return AppDateFormatter.dayLabel.string(from: date)
     }
 
     /// "yyyy-MM-dd HH:mm" — 같은 분 그루핑 키
     var minuteKey: String {
-        let fmt = ISO8601DateFormatter()
-        fmt.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
-        guard let date = fmt.date(from: self) else { return self }
-        let f = DateFormatter()
-        f.dateFormat = "yyyy-MM-dd HH:mm"
-        return f.string(from: date)
+        guard let date = AppDateFormatter.iso8601.date(from: self) else { return self }
+        return AppDateFormatter.minuteKey.string(from: date)
+    }
+
+    /// "M월 d일" — 첨부 파일 썸네일 오버레이용
+    var attachmentDateLabel: String {
+        guard let date = AppDateFormatter.iso8601.date(from: self) else { return self }
+        return AppDateFormatter.chipDate.string(from: date)
     }
 
     var messageTimeLabel: String {
-        let formatter = ISO8601DateFormatter()
-        formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
-        guard let date = formatter.date(from: self) else { return "" }
-
+        guard let date = AppDateFormatter.iso8601.date(from: self) else { return "" }
         let f = DateFormatter()
         f.locale = Locale(identifier: "ko_KR")
-
-        if Calendar.current.isDateInToday(date) {
-            f.dateFormat = "a h:mm"
-        } else {
-            f.dateFormat = "M/d a h:mm"
-        }
+        f.dateFormat = Calendar.current.isDateInToday(date) ? "a h:mm" : "M/d a h:mm"
         return f.string(from: date)
     }
 }
