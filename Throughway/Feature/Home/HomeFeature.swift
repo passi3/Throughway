@@ -12,7 +12,9 @@ enum HomeFeature {
         var newActivities: [ActivitySummaryDTO] = []
         var geoPosts: [PostDTO] = []
         var isLoadingNewActivities: Bool = false
+        var likeOverrides: [String: Bool] = [:]
         var likeCountOverrides: [String: Int] = [:]
+        var commentCountOverrides: [String: Int] = [:]
         var distanceKm: Double = 5.0
         var myUserId: String = ""
     }

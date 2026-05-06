@@ -16,6 +16,7 @@ struct HomeView: View {
     @State private var hasSelectedCountryFilter = false
     @State private var selectedCreator: UserInfoResponseDTO? = nil
     @State private var chatRoom: ChatRoomDTO? = nil
+    @State private var selectedPost: PostDTO? = nil
 
     private let categories = ["투어", "관광", "패키지", "익사이팅", "체험"]
     private let availableFlags: [AppFlag] = [.korea, .japan, .australia, .philippines, .thailand]
@@ -80,6 +81,21 @@ struct HomeView: View {
             }
             .navigationDestination(item: $chatRoom) { room in
                 ChatDetailView(room: room, myUserId: viewModel.state.myUserId)
+            }
+        }
+        .overlay {
+            if let post = selectedPost {
+                PostDetailOverlayView(
+                    post: post,
+                    onDismiss: { selectedPost = nil },
+                    onCommentCreated: {
+                        viewModel.incrementCommentCount(for: post.postId)
+                    },
+                    onCommentDeleted: {
+                        viewModel.decrementCommentCount(for: post.postId)
+                    }
+                )
+                .transition(.opacity.animation(.easeInOut(duration: 0.2)))
             }
         }
         .task {
@@ -225,7 +241,7 @@ private extension HomeView {
                                 .fill(Color.blackSeafoam)
                                 .frame(width: 18, height: 18)
                                 .overlay(
-                                    Image(systemName: "won.sign")
+                                    Text("₩")
                                         .font(.system(size: 9))
                                         .foregroundStyle(Color.gray0)
                                 )
@@ -349,7 +365,12 @@ private extension HomeView {
                     .padding(.vertical, 40)
             } else {
                 ForEach(viewModel.state.geoPosts, id: \.postId) { post in
-                    activityPost(post)
+                    Button {
+                        selectedPost = post
+                    } label: {
+                        activityPost(post)
+                    }
+                    .buttonStyle(.plain)
                 }
             }
         }
@@ -357,8 +378,11 @@ private extension HomeView {
     }
 
     func activityPost(_ post: PostDTO) -> some View {
-        VStack(alignment: .leading, spacing: 12) {
-            // Creator row
+        let isLiked = viewModel.isLiked(post)
+        let likeCount = viewModel.likeCount(for: post)
+
+        return VStack(alignment: .leading, spacing: 0) {
+            // 1. 프로필 헤더
             Button {
                 selectedCreator = post.creator.asUserInfo
             } label: {
@@ -375,11 +399,16 @@ private extension HomeView {
                         .frame(width: 36, height: 36)
                         .clipShape(Circle())
 
-                    VStack(alignment: .leading, spacing: 2) {
+                    HStack(spacing: 6) {
                         Text(post.creator.nick)
                             .font(.Pretendard.body3)
                             .fontWeight(.semibold)
                             .foregroundStyle(Color.gray90)
+
+                        Text("·")
+                            .font(.Pretendard.caption2)
+                            .foregroundStyle(Color.gray30)
+
                         Text(relativeTime(from: post.createdAt))
                             .font(.Pretendard.caption2)
                             .foregroundStyle(Color.gray45)
@@ -389,37 +418,108 @@ private extension HomeView {
                 }
             }
             .buttonStyle(.plain)
+            .padding(.horizontal, 14)
+            .padding(.top, 14)
+            .padding(.bottom, 10)
 
-            // Image grid
-            postImageGrid(post)
-                .clipShape(RoundedRectangle(cornerRadius: 8))
+            // 2. 텍스트 (제목 + 내용)
+            VStack(alignment: .leading, spacing: 4) {
+                Text(post.title)
+                    .font(.Pretendard.body3)
+                    .fontWeight(.semibold)
+                    .foregroundStyle(Color.gray90)
 
-            // Title
-            Text(post.title)
-                .font(.Pretendard.body2)
-                .fontWeight(.bold)
-                .foregroundStyle(Color.gray90)
-
-            // Content
-            Text(post.content)
-                .font(.Pretendard.body3)
-                .foregroundStyle(Color.gray75)
-                .lineLimit(2)
-                .lineSpacing(3)
-
-            // Tag chips
-            if post.country != nil || post.category != nil {
-                HStack(spacing: 6) {
-                    if let country = post.country {
-                        postTagChip(text: country, icon: "mappin")
-                    }
-                    if let category = post.category {
-                        postTagChip(text: category, icon: nil)
-                    }
-                }
+                Text(post.content)
+                    .font(.Pretendard.body3)
+                    .foregroundStyle(Color.gray60)
+                    .lineLimit(2)
+                    .lineSpacing(2)
             }
+            .padding(.horizontal, 14)
+            .padding(.bottom, 12)
+
+            // 3. 이미지 (1×n 가로 스크롤)
+            if !post.files.isEmpty {
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: 6) {
+                        ForEach(post.files.indices, id: \.self) { index in
+                            KFImage(post.files[index].serverImageURL)
+                                .requestModifier(AuthImageModifier())
+                                .placeholder {
+                                    RoundedRectangle(cornerRadius: 8)
+                                        .fill(Color.gray15)
+                                        .overlay(Image(systemName: "photo").foregroundStyle(Color.gray30))
+                                }
+                                .resizable()
+                                .scaledToFill()
+                                .frame(width: post.files.count == 1 ? nil : 200, height: 220)
+                                .frame(maxWidth: post.files.count == 1 ? .infinity : nil)
+                                .clipShape(RoundedRectangle(cornerRadius: 8))
+                        }
+                    }
+                    .padding(.horizontal, 14)
+                }
+                .padding(.bottom, 12)
+            }
+
+            // 4. 카테고리 칩
+            if let category = post.category {
+                postTagChip(text: category)
+                    .padding(.horizontal, 14)
+                    .padding(.bottom, 12)
+            }
+
+            // 5. 액션 바
+            Divider()
+                .background(Color.gray15)
+
+            HStack(spacing: 0) {
+                // 좋아요
+                Button {
+                    viewModel.send(.likeTapped(post))
+                } label: {
+                    HStack(spacing: 5) {
+                        Image(systemName: isLiked ? "heart.fill" : "heart")
+                            .font(.system(size: 16))
+                            .foregroundStyle(isLiked ? Color.rosyPunch : Color.gray60)
+                        Text("\(likeCount)")
+                            .font(.Pretendard.caption1)
+                            .foregroundStyle(Color.gray60)
+                    }
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 10)
+                }
+                .buttonStyle(.borderless)
+
+                Divider().frame(height: 18).background(Color.gray15)
+
+                // 댓글
+                HStack(spacing: 5) {
+                    Image(systemName: "bubble.right")
+                        .font(.system(size: 15))
+                        .foregroundStyle(Color.gray60)
+                    Text("\(viewModel.commentCount(for: post))")
+                        .font(.Pretendard.caption1)
+                        .foregroundStyle(Color.gray60)
+                }
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 10)
+
+                Divider().frame(height: 18).background(Color.gray15)
+
+                // 공유
+                Button {
+                } label: {
+                    Image(systemName: "square.and.arrow.up")
+                        .font(.system(size: 15))
+                        .foregroundStyle(Color.gray60)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 10)
+                }
+                .buttonStyle(.borderless)
+            }
+            .padding(.horizontal, 8)
         }
-        .padding(14)
         .background(Color.gray0)
         .clipShape(RoundedRectangle(cornerRadius: 12))
         .overlay(
@@ -428,137 +528,14 @@ private extension HomeView {
         )
     }
 
-    @ViewBuilder
-    func postImageGrid(_ post: PostDTO) -> some View {
-        let files = post.files
-        let isLiked = viewModel.isLiked(post)
-
-        if files.isEmpty {
-            RoundedRectangle(cornerRadius: 8)
-                .fill(Color.gray15)
-                .frame(maxWidth: .infinity)
-                .frame(height: 200)
-                .overlay(
-                    Image(systemName: "photo")
-                        .font(.system(size: 36))
-                        .foregroundStyle(Color.gray30)
-                )
-        } else if files.count == 1 {
-            singlePostImage(files[0], isLiked: isLiked, post: post)
-                .frame(maxWidth: .infinity, maxHeight: 200)
-        } else {
-            GeometryReader { geo in
-                HStack(spacing: 3) {
-                    // Main image (left 2/3)
-                    ZStack(alignment: .topLeading) {
-                        KFImage(files[0].serverImageURL)
-                            .requestModifier(AuthImageModifier())
-                            .placeholder { postImagePlaceholder }
-                            .resizable()
-                            .scaledToFill()
-                            .frame(width: geo.size.width * 2/3, height: 200)
-                            .clipped()
-
-                        // Heart overlay
-                        Button {
-                            viewModel.send(.likeTapped(post))
-                        } label: {
-                            Image(systemName: isLiked ? "heart.fill" : "heart")
-                                .font(.system(size: 16))
-                                .foregroundStyle(isLiked ? Color.rosyPunch : Color.gray0)
-                                .padding(8)
-                        }
-
-                        // Play button center
-                        Image(systemName: "play.circle.fill")
-                            .font(.system(size: 36))
-                            .foregroundStyle(Color.gray0.opacity(0.85))
-                            .frame(width: geo.size.width * 2/3, height: 200)
-                    }
-                    .frame(width: geo.size.width * 2/3, height: 200)
-
-                    // Right column (1/3)
-                    VStack(spacing: 3) {
-                        KFImage(files[1].serverImageURL)
-                            .requestModifier(AuthImageModifier())
-                            .placeholder { postImagePlaceholder }
-                            .resizable()
-                            .scaledToFill()
-                            .frame(width: geo.size.width / 3, height: 98)
-                            .clipped()
-
-                        if files.count >= 3 {
-                            KFImage(files[2].serverImageURL)
-                                .requestModifier(AuthImageModifier())
-                                .placeholder { postImagePlaceholder }
-                                .resizable()
-                                .scaledToFill()
-                                .frame(width: geo.size.width / 3, height: 98)
-                                .clipped()
-                        } else {
-                            postImagePlaceholder
-                                .frame(width: geo.size.width / 3, height: 98)
-                        }
-                    }
-                    .frame(width: geo.size.width / 3)
-                }
-            }
-            .frame(height: 200)
-        }
-    }
-
-    func singlePostImage(_ path: String, isLiked: Bool, post: PostDTO) -> some View {
-        ZStack(alignment: .topLeading) {
-            KFImage(path.serverImageURL)
-                .requestModifier(AuthImageModifier())
-                .placeholder { postImagePlaceholder }
-                .resizable()
-                .scaledToFill()
-                .frame(maxWidth: .infinity)
-                .frame(height: 200)
-                .clipped()
-
-            Button {
-                viewModel.send(.likeTapped(post))
-            } label: {
-                Image(systemName: isLiked ? "heart.fill" : "heart")
-                    .font(.system(size: 16))
-                    .foregroundStyle(isLiked ? Color.rosyPunch : Color.gray0)
-                    .padding(8)
-            }
-
-            Image(systemName: "play.circle.fill")
-                .font(.system(size: 36))
-                .foregroundStyle(Color.gray0.opacity(0.85))
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-        }
-    }
-
-    var postImagePlaceholder: some View {
-        Rectangle()
-            .fill(Color.gray15)
-            .overlay(
-                Image(systemName: "photo")
-                    .font(.system(size: 24))
-                    .foregroundStyle(Color.gray30)
-            )
-    }
-
-    func postTagChip(text: String, icon: String?) -> some View {
-        HStack(spacing: 4) {
-            if let icon {
-                Image(systemName: icon)
-                    .font(.system(size: 10))
-                    .foregroundStyle(Color.blackSeafoam)
-            }
-            Text(text)
-                .font(.Pretendard.caption2)
-                .foregroundStyle(Color.gray75)
-        }
-        .padding(.horizontal, 8)
-        .padding(.vertical, 4)
-        .background(Color.gray15)
-        .clipShape(Capsule())
+    func postTagChip(text: String) -> some View {
+        Text(text)
+            .font(.Pretendard.caption2)
+            .foregroundStyle(Color.blackSeafoam)
+            .padding(.horizontal, 8)
+            .padding(.vertical, 4)
+            .background(Color.blackSeafoam.opacity(0.08))
+            .clipShape(Capsule())
     }
 
     func sectionHeader(title: String, action: String) -> some View {

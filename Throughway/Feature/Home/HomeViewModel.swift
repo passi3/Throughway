@@ -11,9 +11,6 @@ import CoreLocation
 @MainActor
 final class HomeViewModel: BaseViewModel<HomeFeature.State, HomeFeature.Intent> {
 
-    private let defaults = UserDefaults.standard
-    private func likeKey(_ postId: String) -> String { "post_like_\(postId)" }
-
     private let activityClient: ActivityAPIClient
     private let postClient: PostAPIClient
     private let userClient: UserAPIClient
@@ -56,7 +53,6 @@ final class HomeViewModel: BaseViewModel<HomeFeature.State, HomeFeature.Intent> 
         Task { await loadMyUserId() }
         let status = locationManager.authorizationStatus
         print("[Home] location authorization status: \(status.logDescription)")
-
         switch status {
         case .notDetermined:
             locationManager.requestWhenInUseAuthorization()
@@ -71,13 +67,13 @@ final class HomeViewModel: BaseViewModel<HomeFeature.State, HomeFeature.Intent> 
 
     private func loadMyUserId() async {
         guard state.myUserId.isEmpty else { return }
-        if let cached = UserDefaults.standard.string(forKey: "myUserId"), !cached.isEmpty {
-            reduce { $0.myUserId = cached }
+        if !AppSession.userId.isEmpty {
+            reduce { $0.myUserId = AppSession.userId }
             return
         }
         do {
             let profile = try await userClient.fetchMyProfile()
-            UserDefaults.standard.set(profile.userId, forKey: "myUserId")
+            AppSession.userId = profile.userId
             reduce { $0.myUserId = profile.userId }
         } catch {
             print("[Home] loadMyUserId error:", error)
@@ -98,12 +94,29 @@ final class HomeViewModel: BaseViewModel<HomeFeature.State, HomeFeature.Intent> 
     }
 
     func isLiked(_ post: PostDTO) -> Bool {
-        guard defaults.object(forKey: likeKey(post.postId)) != nil else { return post.isLike }
-        return defaults.bool(forKey: likeKey(post.postId))
+        state.likeOverrides[post.postId] ?? post.isLike
     }
 
     func likeCount(for post: PostDTO) -> Int {
         state.likeCountOverrides[post.postId] ?? post.likeCount
+    }
+
+    func commentCount(for post: PostDTO) -> Int {
+        state.commentCountOverrides[post.postId] ?? post.displayCommentCount
+    }
+
+    func incrementCommentCount(for postId: String) {
+        let currentCount = state.commentCountOverrides[postId]
+            ?? state.geoPosts.first(where: { $0.postId == postId })?.displayCommentCount
+            ?? 0
+        reduce { $0.commentCountOverrides[postId] = currentCount + 1 }
+    }
+
+    func decrementCommentCount(for postId: String) {
+        let currentCount = state.commentCountOverrides[postId]
+            ?? state.geoPosts.first(where: { $0.postId == postId })?.displayCommentCount
+            ?? 0
+        reduce { $0.commentCountOverrides[postId] = max(0, currentCount - 1) }
     }
 
     private func toggleLike(for post: PostDTO) async {
@@ -112,16 +125,20 @@ final class HomeViewModel: BaseViewModel<HomeFeature.State, HomeFeature.Intent> 
         let currentCount = likeCount(for: post)
 
         // Optimistic update
-        defaults.set(newStatus, forKey: likeKey(post.postId))
-        reduce { $0.likeCountOverrides[post.postId] = newStatus ? currentCount + 1 : currentCount - 1 }
+        reduce {
+            $0.likeOverrides[post.postId] = newStatus
+            $0.likeCountOverrides[post.postId] = newStatus ? currentCount + 1 : currentCount - 1
+        }
 
         do {
             _ = try await postClient.toggleLike(post.postId, newStatus)
         } catch {
             print("[Home] toggleLike failed: \(error.localizedDescription)")
             // Revert
-            defaults.set(current, forKey: likeKey(post.postId))
-            reduce { $0.likeCountOverrides[post.postId] = currentCount }
+            reduce {
+                $0.likeOverrides[post.postId] = current
+                $0.likeCountOverrides[post.postId] = currentCount
+            }
         }
     }
 
@@ -143,10 +160,36 @@ final class HomeViewModel: BaseViewModel<HomeFeature.State, HomeFeature.Intent> 
                 let result = try await postClient.fetchByGeolocation(lat, lon, distanceInMeters)
                 if !Task.isCancelled {
                     print("[Home] geoPosts count: \(result.data.count)")
-                    reduce { $0.geoPosts = result.data }
+                    reduce {
+                        $0.commentCountOverrides = [:]
+                        $0.geoPosts = result.data
+                    }
+                    await enrichCommentCounts(for: result.data)
                 }
             } catch {
                 print("[Home] fetchByGeolocation failed: \(error.localizedDescription)")
+            }
+        }
+    }
+
+    private func enrichCommentCounts(for posts: [PostDTO]) async {
+        await withTaskGroup(of: (String, Int)?.self) { group in
+            for post in posts {
+                group.addTask { [postClient] in
+                    do {
+                        let detail = try await postClient.fetchDetail(post.postId)
+                        let count = detail.comments.reduce(0) { $0 + 1 + $1.replies.count }
+                        return (post.postId, count)
+                    } catch {
+                        print("[Home] fetchDetail failed for \(post.postId): \(error.localizedDescription)")
+                        return nil
+                    }
+                }
+            }
+
+            for await result in group {
+                guard !Task.isCancelled, let (postId, count) = result else { continue }
+                reduce { $0.commentCountOverrides[postId] = count }
             }
         }
     }
