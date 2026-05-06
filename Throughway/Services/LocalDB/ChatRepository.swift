@@ -55,6 +55,14 @@ final class ChatRepository {
         }
     }
 
+    func deleteMessages(roomId: String) {
+        let objects = realm.objects(ChatMessageObject.self)
+            .where { $0.roomId == roomId }
+        try? realm.write {
+            realm.delete(objects)
+        }
+    }
+
     func deleteAll() {
         try? realm.write {
             realm.deleteAll()
