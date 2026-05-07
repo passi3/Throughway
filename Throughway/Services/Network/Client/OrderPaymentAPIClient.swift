@@ -9,7 +9,7 @@ import Foundation
 
 struct OrderPaymentAPIClient {
     // Order
-    var createOrder:      @Sendable (CreateOrderRequestDTO) async throws -> OrderDTO
+    var createOrder:      @Sendable (CreateOrderRequestDTO) async throws -> CreateOrderResponseDTO
     var fetchOrders:      @Sendable () async throws -> OrderListResponseDTO
 
     // Payment
