@@ -16,7 +16,7 @@ struct HomeView: View {
     @State private var selectedCreator: UserInfoResponseDTO? = nil
     @State private var chatRoom: ChatRoomDTO? = nil
     @State private var selectedPost: PostDTO? = nil
-    @State private var showAllActivities = false
+    @State private var showMoreActivities = false
     @State private var relatedActivityCountry: String? = nil
     @State private var relatedActivityCategory: String? = nil
     @State private var homeScrollOffset: CGFloat = 0
@@ -58,7 +58,7 @@ struct HomeView: View {
                         onRelatedActivitiesTapped: { country, category in
                             relatedActivityCountry = country
                             relatedActivityCategory = category
-                            showAllActivities = true
+                            showMoreActivities = true
                         },
                         onCommentCreated: {
                             viewModel.incrementCommentCount(for: post.postId)
@@ -127,8 +127,8 @@ struct HomeView: View {
             .navigationDestination(item: $chatRoom) { room in
                 ChatDetailView(room: room, myUserId: viewModel.state.myUserId)
             }
-            .navigationDestination(isPresented: $showAllActivities) {
-                AllActivitiesView(
+            .navigationDestination(isPresented: $showMoreActivities) {
+                MoreActivitiesView(
                     contextCountry: relatedActivityCountry,
                     contextCategory: relatedActivityCategory
                 )
@@ -234,7 +234,7 @@ private extension HomeView {
     var featuredSection: some View {
         VStack(spacing: 12) {
             sectionHeader(title: "NEW 액티비티", action: "View All") {
-                showAllActivities = true
+                showMoreActivities = true
             }
 
             ScrollView(.horizontal, showsIndicators: false) {
