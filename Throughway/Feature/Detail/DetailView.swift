@@ -8,6 +8,7 @@
 import SwiftUI
 import Kingfisher
 import MapKit
+import iamport_ios
 
 struct DetailView: View {
     @StateObject private var viewModel: DetailViewModel
@@ -20,7 +21,7 @@ struct DetailView: View {
         ScrollView {
             VStack(spacing: 0) {
                 heroImage
-                
+
                 VStack(alignment: .leading, spacing: 20) {
                     titleSection
                     divider
@@ -39,9 +40,11 @@ struct DetailView: View {
                     dateSection
                     divider
                     timeSection
+                    divider
+                    participantSection
                 }
                 .padding(16)
-                
+
                 Spacer().frame(height: 80)
             }
         }
@@ -60,6 +63,29 @@ struct DetailView: View {
             }
         }
         .task { viewModel.send(.onAppear) }
+        // MARK: - Payment Sheet
+        .sheet(
+            isPresented: Binding(
+                get: { viewModel.state.isPaymentPresented },
+                set: { if !$0 { viewModel.send(.paymentDismissed) } }
+            )
+        ) {
+            if let payment = viewModel.pendingPayment {
+                IamportPaymentView(payment: payment) { response in
+                    viewModel.send(.paymentResponseReceived(
+                        impUid: response?.imp_uid,
+                        success: response?.success == true
+                    ))
+                }
+                .ignoresSafeArea()
+            }
+        }
+        // MARK: - Payment Result Alert
+        .alert(paymentAlertTitle, isPresented: isPaymentAlertPresented) {
+            Button("확인") { viewModel.send(.paymentAlertDismissed) }
+        } message: {
+            Text(paymentAlertMessage)
+        }
     }
 }
 
@@ -426,29 +452,71 @@ private extension DetailView {
             .fill(Color.gray15)
             .frame(height: 1)
     }
-    
-    var bottomBar: some View {
-        HStack(spacing: 12) {
-            Text(viewModel.price.final.wonFormatted)
+
+    var participantSection: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("참가 인원")
                 .font(.Pretendard.body2)
-                .fontWeight(.bold)
-                .frame(alignment: .leading)
+                .fontWeight(.semibold)
                 .foregroundStyle(Color.gray90)
-                .frame(maxWidth: .infinity)
-            
-            Spacer()
-            
-            Button {
-            } label: {
-                Text("결제하기")
+
+            HStack(spacing: 16) {
+                Button {
+                    viewModel.send(.participantCountChanged(viewModel.state.participantCount - 1))
+                } label: {
+                    Image(systemName: "minus.circle")
+                        .font(.system(size: 24))
+                        .foregroundStyle(viewModel.state.participantCount > 1 ? Color.blackSeafoam : Color.gray30)
+                }
+                .disabled(viewModel.state.participantCount <= 1)
+
+                Text("\(viewModel.state.participantCount)명")
                     .font(.Pretendard.body2)
                     .fontWeight(.semibold)
-                    .foregroundStyle(.white)
-                    .frame(maxWidth: .infinity)
-                    .frame(height: 48)
-                    .background(Color.blackSeafoam)
-                    .clipShape(RoundedRectangle(cornerRadius: 10))
+                    .foregroundStyle(Color.gray90)
+                    .frame(minWidth: 40, alignment: .center)
+
+                Button {
+                    viewModel.send(.participantCountChanged(viewModel.state.participantCount + 1))
+                } label: {
+                    Image(systemName: "plus.circle")
+                        .font(.system(size: 24))
+                        .foregroundStyle(Color.blackSeafoam)
+                }
             }
+        }
+    }
+
+    var bottomBar: some View {
+        HStack(spacing: 12) {
+            Text((viewModel.price.final * viewModel.state.participantCount).wonFormatted)
+                .font(.Pretendard.body2)
+                .fontWeight(.bold)
+                .foregroundStyle(Color.gray90)
+                .frame(maxWidth: .infinity, alignment: .leading)
+
+            Spacer()
+
+            Button {
+                viewModel.send(.paymentTapped)
+            } label: {
+                Group {
+                    if viewModel.state.paymentPhase.isInProgress {
+                        ProgressView()
+                            .tint(.white)
+                    } else {
+                        Text(paymentButtonTitle)
+                            .font(.Pretendard.body2)
+                            .fontWeight(.semibold)
+                            .foregroundStyle(.white)
+                    }
+                }
+                .frame(maxWidth: .infinity)
+                .frame(height: 48)
+                .background(viewModel.isPaymentReady ? Color.blackSeafoam : Color.gray30)
+                .clipShape(RoundedRectangle(cornerRadius: 10))
+            }
+            .disabled(!viewModel.isPaymentReady || viewModel.state.paymentPhase.isInProgress)
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 12)
@@ -458,6 +526,35 @@ private extension DetailView {
                 .fill(Color.gray15)
                 .frame(height: 1)
         }
+    }
+
+    // MARK: - Payment Alert Helpers
+
+    private var isPaymentAlertPresented: Binding<Bool> {
+        Binding(
+            get: { viewModel.state.paymentPhase.isTerminal },
+            set: { _ in }    // dismiss는 paymentAlertDismissed intent로만 처리
+        )
+    }
+
+    private var paymentAlertTitle: String {
+        if case .success = viewModel.state.paymentPhase { return "결제 완료" }
+        return "결제 실패"
+    }
+
+    private var paymentAlertMessage: String {
+        switch viewModel.state.paymentPhase {
+        case .success:           return "예약이 완료되었습니다."
+        case .failure(let msg):  return msg
+        default:                 return ""
+        }
+    }
+
+    private var paymentButtonTitle: String {
+        if viewModel.state.paymentPhase.isInProgress {
+            return "처리 중..."
+        }
+        return viewModel.isPaymentReady ? "결제하기" : "날짜·시간을 선택해주세요"
     }
 }
 
