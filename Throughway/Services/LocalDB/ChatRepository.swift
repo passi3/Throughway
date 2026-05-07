@@ -15,7 +15,8 @@ final class ChatRepository {
         self.realm = try! Realm()
     }
 
-    // createdAt 오름차순(오래된 것부터) 정렬
+    // MARK: - 메시지 조회
+
     func fetchMessages(roomId: String) -> [ChatMessageDTO] {
         realm.objects(ChatMessageObject.self)
             .where { $0.roomId == roomId }
@@ -23,7 +24,6 @@ final class ChatRepository {
             .map { $0.toDTO() }
     }
 
-    // 마지막 메시지의 createdAt — cursor_date로 사용
     func lastMessageDate(roomId: String) -> String? {
         realm.objects(ChatMessageObject.self)
             .where { $0.roomId == roomId }
@@ -32,7 +32,6 @@ final class ChatRepository {
             .createdAt
     }
 
-    // 마지막 메시지 DTO — 채팅방 목록 표시용
     func lastMessage(roomId: String) -> ChatMessageDTO? {
         realm.objects(ChatMessageObject.self)
             .where { $0.roomId == roomId }
@@ -41,7 +40,8 @@ final class ChatRepository {
             .toDTO()
     }
 
-    // upsert — primaryKey(chatId) 기준 중복 방지
+    // MARK: - 메시지 저장
+
     func save(messages: [ChatMessageDTO]) {
         let objects = messages.map { $0.toObject() }
         try? realm.write {
@@ -55,14 +55,38 @@ final class ChatRepository {
         }
     }
 
-    func deleteMessages(roomId: String) {
-        let objects = realm.objects(ChatMessageObject.self)
-            .where { $0.roomId == roomId }
+    // MARK: - lastSeenAt 관리
+
+    func lastSeenAt(roomId: String) -> String? {
+        realm.object(ofType: ChatRoomLastSeenRecord.self, forPrimaryKey: roomId)?.lastSeenAt
+    }
+
+    func updateLastSeen(roomId: String) {
+        let record = ChatRoomLastSeenRecord()
+        record.roomId = roomId
+        record.lastSeenAt = ISO8601DateFormatter().string(from: Date())
         try? realm.write {
-            realm.delete(objects)
+            realm.add(record, update: .modified)
         }
     }
 
+    // MARK: - 삭제
+
+    /// 채팅방 삭제: 메시지 삭제 + lastSeenAt을 현재 시점으로 갱신
+    /// → 재진입 시 삭제 이후 메시지만 fetch
+    func deleteMessages(roomId: String) {
+        let objects = realm.objects(ChatMessageObject.self)
+            .where { $0.roomId == roomId }
+        let record = ChatRoomLastSeenRecord()
+        record.roomId = roomId
+        record.lastSeenAt = ISO8601DateFormatter().string(from: Date())
+        try? realm.write {
+            realm.delete(objects)
+            realm.add(record, update: .modified)
+        }
+    }
+
+    /// 로그아웃 시 전체 삭제 (lastSeenAt 포함)
     func deleteAll() {
         try? realm.write {
             realm.deleteAll()

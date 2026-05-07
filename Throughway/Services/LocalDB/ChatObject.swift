@@ -37,6 +37,13 @@ extension ChatMessageObject {
     }
 }
 
+// MARK: - 채팅방 마지막 진입 시점 기록
+
+final class ChatRoomLastSeenRecord: Object {
+    @Persisted(primaryKey: true) var roomId: String
+    @Persisted var lastSeenAt: String
+}
+
 extension ChatMessageDTO {
     func toObject() -> ChatMessageObject {
         let object = ChatMessageObject()

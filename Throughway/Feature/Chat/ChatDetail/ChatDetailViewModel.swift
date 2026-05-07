@@ -83,20 +83,26 @@ final class ChatDetailViewModel: BaseViewModel<ChatDetailFeature.State, ChatDeta
         let local = chatRepo.fetchMessages(roomId: room.roomId)
         reduce { $0.messages = local }
 
-        reduce { $0.isLoadingHistory = true }
-        defer { reduce { $0.isLoadingHistory = false } }
+        let lastSeen = chatRepo.lastSeenAt(roomId: room.roomId)
 
-        do {
-            let cursor = chatRepo.lastMessageDate(roomId: room.roomId)
-            let response = try await chatClient.fetchMessages(room.roomId, cursor)
-            if !response.data.isEmpty {
-                chatRepo.save(messages: response.data)
-                let updated = chatRepo.fetchMessages(roomId: room.roomId)
-                reduce { $0.messages = updated }
+        if lastSeen != nil {
+            reduce { $0.isLoadingHistory = true }
+            defer { reduce { $0.isLoadingHistory = false } }
+
+            do {
+                let cursor = chatRepo.lastMessageDate(roomId: room.roomId) ?? lastSeen
+                let response = try await chatClient.fetchMessages(room.roomId, cursor)
+                if !response.data.isEmpty {
+                    chatRepo.save(messages: response.data)
+                    let updated = chatRepo.fetchMessages(roomId: room.roomId)
+                    reduce { $0.messages = updated }
+                }
+            } catch {
+                print("[ChatDetail] fetchMessages error:", error)
             }
-        } catch {
-            print("[ChatDetail] fetchMessages error:", error)
         }
+
+        chatRepo.updateLastSeen(roomId: room.roomId)
 
         let token = await tokenClient.loadAccessToken() ?? ""
         SocketIOManager.shared.connect(roomId: room.roomId, token: token)

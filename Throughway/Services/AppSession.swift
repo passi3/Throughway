@@ -9,4 +9,5 @@ import Foundation
 
 enum AppSession {
     static var userId: String = ""
+    static var userNick: String = ""
 }
