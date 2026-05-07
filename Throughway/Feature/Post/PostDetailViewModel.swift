@@ -48,7 +48,7 @@ final class PostDetailViewModel: BaseViewModel<PostDetailFeature.State, PostDeta
             reduce { $0.commentText = text }
 
         case .replyTapped(let commentId, let nick):
-            reduce { $0.replyingTo = (commentId, nick) }
+            reduce { $0.replyingTo = (commentId: commentId, nick: nick) }
 
         case .cancelReply:
             reduce { $0.replyingTo = nil }
@@ -94,14 +94,14 @@ final class PostDetailViewModel: BaseViewModel<PostDetailFeature.State, PostDeta
         let newIsLike = !currentLike
         let newCount = max(0, currentCount + (newIsLike ? 1 : -1))
 
-        reduce { $0.likeOverride = (newIsLike, newCount) }
+        reduce { $0.likeOverride = (isLike: newIsLike, likeCount: newCount) }
 
         do {
             let response = try await postClient.toggleLike(summary.postId, newIsLike)
-            reduce { $0.likeOverride = (response.isLiked, newCount) }
+            reduce { $0.likeOverride = (isLike: response.isLiked, likeCount: newCount) }
         } catch {
             print("[PostDetail] toggleLike failed: \(error.localizedDescription)")
-            reduce { $0.likeOverride = (currentLike, currentCount) }
+            reduce { $0.likeOverride = (isLike: currentLike, likeCount: currentCount) }
         }
     }
 
@@ -112,15 +112,43 @@ final class PostDetailViewModel: BaseViewModel<PostDetailFeature.State, PostDeta
         reduce { $0.isSubmittingComment = true }
 
         if let editingId = state.editingCommentId {
+            // Optimistic update
+            reduce {
+                $0.commentText = ""
+                $0.editingCommentId = nil
+                $0.comments = $0.comments.map { comment in
+                    if comment.commentId == editingId {
+                        return CommentDTO(
+                            commentId: comment.commentId,
+                            content: text,
+                            creator: comment.creator,
+                            createdAt: comment.createdAt,
+                            replies: comment.replies
+                        )
+                    }
+                    let updatedReplies = comment.replies.map { reply in
+                        reply.commentId == editingId
+                            ? ReplyDTO(commentId: reply.commentId, content: text, creator: reply.creator, createdAt: reply.createdAt)
+                            : reply
+                    }
+                    if updatedReplies.map(\.content) != comment.replies.map(\.content) {
+                        return CommentDTO(
+                            commentId: comment.commentId,
+                            content: comment.content,
+                            creator: comment.creator,
+                            createdAt: comment.createdAt,
+                            replies: updatedReplies
+                        )
+                    }
+                    return comment
+                }
+            }
             do {
                 _ = try await postClient.updateComment(summary.postId, editingId, UpdateCommentRequestDTO(content: text))
-                reduce {
-                    $0.commentText = ""
-                    $0.editingCommentId = nil
-                }
                 await fetchDetail()
             } catch {
                 print("[PostDetail] updateComment failed: \(error.localizedDescription)")
+                await fetchDetail()
             }
         } else {
             let parentId = state.replyingTo?.commentId
@@ -142,12 +170,28 @@ final class PostDetailViewModel: BaseViewModel<PostDetailFeature.State, PostDeta
     }
 
     private func deleteComment(commentId: String) async {
+        // Optimistic removal
+        reduce {
+            $0.comments = $0.comments.compactMap { comment in
+                if comment.commentId == commentId { return nil }
+                let filteredReplies = comment.replies.filter { $0.commentId != commentId }
+                if filteredReplies.count == comment.replies.count { return comment }
+                return CommentDTO(
+                    commentId: comment.commentId,
+                    content: comment.content,
+                    creator: comment.creator,
+                    createdAt: comment.createdAt,
+                    replies: filteredReplies
+                )
+            }
+        }
         do {
             try await postClient.deleteComment(summary.postId, commentId)
             onCommentDeleted()
             await fetchDetail()
         } catch {
             print("[PostDetail] deleteComment failed: \(error.localizedDescription)")
+            await fetchDetail()
         }
     }
 }

@@ -12,10 +12,14 @@ struct PostDetailOverlayView: View {
     @StateObject private var viewModel: PostDetailViewModel
     @FocusState private var isCommentFocused: Bool
     let onDismiss: () -> Void
+    let onUserSelected: (UserInfoResponseDTO) -> Void
+    let onRelatedActivitiesTapped: (_ country: String?, _ category: String?) -> Void
 
     init(
         post: PostDTO,
         onDismiss: @escaping () -> Void,
+        onUserSelected: @escaping (UserInfoResponseDTO) -> Void = { _ in },
+        onRelatedActivitiesTapped: @escaping (_ country: String?, _ category: String?) -> Void = { _, _ in },
         onCommentCreated: @escaping () -> Void = {},
         onCommentDeleted: @escaping () -> Void = {}
     ) {
@@ -27,6 +31,8 @@ struct PostDetailOverlayView: View {
             )
         )
         self.onDismiss = onDismiss
+        self.onUserSelected = onUserSelected
+        self.onRelatedActivitiesTapped = onRelatedActivitiesTapped
     }
 
     var body: some View {
@@ -42,6 +48,7 @@ struct PostDetailOverlayView: View {
                 ScrollView {
                     VStack(alignment: .leading, spacing: 0) {
                         creatorHeader
+                        postTextSection
                         imageCarousel
                         activityLinkSection
                         actionBar
@@ -74,6 +81,22 @@ private extension PostDetailOverlayView {
 
     var post: PostDTO { viewModel.state.post ?? viewModel.summary }
     var currentUserId: String { AppSession.userId }
+
+    var postTextSection: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text(post.title)
+                .font(.Pretendard.body3)
+                .fontWeight(.semibold)
+                .foregroundStyle(Color.gray90)
+
+            Text(post.content)
+                .font(.Pretendard.body3)
+                .foregroundStyle(Color.gray60)
+                .lineSpacing(3)
+        }
+        .padding(.horizontal, 16)
+        .padding(.bottom, 12)
+    }
 
     var creatorHeader: some View {
         HStack(spacing: 10) {
@@ -148,20 +171,53 @@ private extension PostDetailOverlayView {
                     .font(.system(size: 12))
                     .foregroundStyle(Color.blackSeafoam)
 
-                Text("관련 액티비티 보기")
-                    .font(.Pretendard.caption1)
-                    .foregroundStyle(Color.blackSeafoam)
+                if let country = post.country, !country.isEmpty {
+                    Button {
+                        onRelatedActivitiesTapped(country, nil)
+                    } label: {
+                        activityMetaChip(text: country)
+                    }
+                    .buttonStyle(.plain)
+                }
 
-                Spacer()
+                if let category = post.category, !category.isEmpty {
+                    Button {
+                        onRelatedActivitiesTapped(nil, category)
+                    } label: {
+                        activityMetaChip(text: category)
+                    }
+                    .buttonStyle(.plain)
+                }
 
-                Image(systemName: "chevron.right")
-                    .font(.system(size: 12))
-                    .foregroundStyle(Color.gray45)
+                Spacer(minLength: 12)
+
+                Button {
+                    onRelatedActivitiesTapped(post.country, post.category)
+                } label: {
+                    Text("관련 액티비티 보기")
+                        .font(.Pretendard.caption1)
+                        .foregroundStyle(Color.blackSeafoam)
+
+                    Image(systemName: "chevron.right")
+                        .font(.system(size: 12))
+                        .foregroundStyle(Color.gray45)
+                }
+                .buttonStyle(.plain)
             }
             .padding(.horizontal, 16)
             .padding(.vertical, 10)
             .background(Color.blackSeafoam.opacity(0.06))
         }
+    }
+
+    func activityMetaChip(text: String) -> some View {
+        Text(text)
+            .font(.Pretendard.caption2)
+            .foregroundStyle(Color.blackSeafoam)
+            .padding(.horizontal, 8)
+            .padding(.vertical, 4)
+            .background(Color.gray0)
+            .clipShape(Capsule())
     }
 
     var actionBar: some View {
@@ -241,33 +297,56 @@ private extension PostDetailOverlayView {
         let hasReplies = !comment.replies.isEmpty
 
         VStack(alignment: .leading, spacing: 0) {
-            // 최상위 댓글
-            HStack(alignment: .top, spacing: 10) {
-                VStack(spacing: 0) {
-                    commentAvatar(url: comment.creator.profileImage, size: 32)
-                    if hasReplies {
-                        Rectangle()
-                            .fill(Color.gray15)
-                            .frame(width: 1.5)
-                            .frame(maxHeight: .infinity)
-                            .padding(.top, 4)
-                    }
-                }
+            VStack(alignment: .leading, spacing: 0) {
+                HStack(alignment: .top, spacing: 10) {
+                    HStack(alignment: .top, spacing: 10) {
+                        VStack(spacing: 0) {
+                            Button {
+                                onUserSelected(comment.creator.asUserInfo)
+                            } label: {
+                                commentAvatar(url: comment.creator.profileImage, size: 32)
+                            }
+                            .buttonStyle(.plain)
 
-                VStack(alignment: .leading, spacing: 4) {
-                    HStack(spacing: 6) {
-                        Text(comment.creator.nick)
-                            .font(.Pretendard.caption1)
-                            .fontWeight(.semibold)
-                            .foregroundStyle(Color.gray90)
-                        Text(relativeTime(from: comment.createdAt))
-                            .font(.Pretendard.caption2)
-                            .foregroundStyle(Color.gray45)
+                            if hasReplies {
+                                Rectangle()
+                                    .fill(Color.gray15)
+                                    .frame(width: 1.5)
+                                    .frame(maxHeight: .infinity)
+                                    .padding(.top, 4)
+                            }
+                        }
+
+                        VStack(alignment: .leading, spacing: 4) {
+                            HStack(spacing: 6) {
+                                Button {
+                                    onUserSelected(comment.creator.asUserInfo)
+                                } label: {
+                                    Text(comment.creator.nick)
+                                        .font(.Pretendard.caption1)
+                                        .fontWeight(.semibold)
+                                        .foregroundStyle(Color.gray90)
+                                }
+                                .buttonStyle(.plain)
+
+                                Text(relativeTime(from: comment.createdAt))
+                                    .font(.Pretendard.caption2)
+                                    .foregroundStyle(Color.gray45)
+                            }
+
+                            Text(comment.content)
+                                .font(.Pretendard.caption1)
+                                .foregroundStyle(Color.gray75)
+                                .fixedSize(horizontal: false, vertical: true)
+                        }
                     }
-                    Text(comment.content)
-                        .font(.Pretendard.caption1)
-                        .foregroundStyle(Color.gray75)
-                        .fixedSize(horizontal: false, vertical: true)
+
+                    Spacer()
+                }
+                .padding(.horizontal, 16)
+                .padding(.vertical, 8)
+
+                HStack {
                     Button {
                         viewModel.send(.replyTapped(commentId: comment.commentId, nick: comment.creator.nick))
                         isCommentFocused = true
@@ -276,13 +355,14 @@ private extension PostDetailOverlayView {
                             .font(.Pretendard.caption2)
                             .foregroundStyle(Color.gray45)
                     }
-                    .padding(.top, 2)
-                }
+                    .buttonStyle(.plain)
 
-                Spacer()
+                    Spacer()
+                }
+                .padding(.horizontal, 58)
+                .padding(.bottom, 8)
             }
-            .padding(.horizontal, 16)
-            .padding(.vertical, 8)
+            .contentShape(Rectangle())
             .modifier(CommentContextMenuModifier(
                 isOwner: comment.creator.userId == currentUserId,
                 onEdit: {
@@ -308,34 +388,58 @@ private extension PostDetailOverlayView {
     }
 
     func replyRow(_ reply: ReplyDTO, isLast: Bool, parentCommentId: String) -> some View {
-        HStack(alignment: .top, spacing: 10) {
-            VStack(spacing: 0) {
-                Rectangle()
-                    .fill(Color.gray15)
-                    .frame(width: 1.5)
-                    .frame(height: isLast ? 16 : nil)
-                    .frame(maxHeight: isLast ? nil : .infinity)
-                if isLast { Spacer() }
-            }
-            .frame(width: 32)
-
-            commentAvatar(url: reply.creator.profileImage, size: 24)
-                .padding(.leading, 8)
-
-            VStack(alignment: .leading, spacing: 4) {
-                HStack(spacing: 6) {
-                    Text(reply.creator.nick)
-                        .font(.Pretendard.caption1)
-                        .fontWeight(.semibold)
-                        .foregroundStyle(Color.gray90)
-                    Text(relativeTime(from: reply.createdAt))
-                        .font(.Pretendard.caption2)
-                        .foregroundStyle(Color.gray45)
+        VStack(alignment: .leading, spacing: 0) {
+            HStack(alignment: .top, spacing: 10) {
+                VStack(spacing: 0) {
+                    Rectangle()
+                        .fill(Color.gray15)
+                        .frame(width: 1.5)
+                        .frame(height: isLast ? 16 : nil)
+                        .frame(maxHeight: isLast ? nil : .infinity)
+                    if isLast { Spacer() }
                 }
-                Text(reply.content)
-                    .font(.Pretendard.caption1)
-                    .foregroundStyle(Color.gray75)
-                    .fixedSize(horizontal: false, vertical: true)
+                .frame(width: 32)
+
+                HStack(alignment: .top, spacing: 10) {
+                    Button {
+                        onUserSelected(reply.creator.asUserInfo)
+                    } label: {
+                        commentAvatar(url: reply.creator.profileImage, size: 24)
+                    }
+                    .buttonStyle(.plain)
+
+                    VStack(alignment: .leading, spacing: 4) {
+                        HStack(spacing: 6) {
+                            Button {
+                                onUserSelected(reply.creator.asUserInfo)
+                            } label: {
+                                Text(reply.creator.nick)
+                                    .font(.Pretendard.caption1)
+                                    .fontWeight(.semibold)
+                                    .foregroundStyle(Color.gray90)
+                            }
+                            .buttonStyle(.plain)
+
+                            Text(relativeTime(from: reply.createdAt))
+                                .font(.Pretendard.caption2)
+                                .foregroundStyle(Color.gray45)
+                        }
+                        Text(reply.content)
+                            .font(.Pretendard.caption1)
+                            .foregroundStyle(Color.gray75)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                }
+
+                Spacer()
+            }
+            .padding(.leading, 16)
+            .padding(.trailing, 16)
+            .padding(.vertical, 6)
+
+            HStack {
+                Spacer()
+                    .frame(width: 58)
                 Button {
                     viewModel.send(.replyTapped(commentId: parentCommentId, nick: reply.creator.nick))
                     isCommentFocused = true
@@ -344,14 +448,14 @@ private extension PostDetailOverlayView {
                         .font(.Pretendard.caption2)
                         .foregroundStyle(Color.gray45)
                 }
-                .padding(.top, 2)
+                .buttonStyle(.plain)
+                Spacer()
             }
-
-            Spacer()
+            .padding(.leading, 16)
+            .padding(.trailing, 16)
+            .padding(.bottom, 6)
         }
-        .padding(.leading, 16)
-        .padding(.trailing, 16)
-        .padding(.vertical, 6)
+        .contentShape(Rectangle())
         .modifier(CommentContextMenuModifier(
             isOwner: reply.creator.userId == currentUserId,
             onEdit: {
