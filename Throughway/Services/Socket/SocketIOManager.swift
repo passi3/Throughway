@@ -112,6 +112,7 @@ final class SocketIOManager {
         socket.on(clientEvent: .connect) { data, _ in
             print("[Socket] Connected", data)
         }
+        
 
         socket.on(clientEvent: .disconnect) { data, _ in
             print("[Socket] Disconnected", data)

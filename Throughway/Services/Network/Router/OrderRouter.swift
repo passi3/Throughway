@@ -22,7 +22,7 @@ extension OrderRouter {
     var method: HTTPMethod {
         switch self {
         case .createOrder:  return .post
-        case .fetchOrders:  return .post
+        case .fetchOrders:  return .get
         }
     }
 

@@ -10,7 +10,7 @@ import Foundation
 struct ChatAPIClient {
     var fetchRooms:      @Sendable () async throws -> ChatRoomListResponseDTO
     var createOrGetRoom: @Sendable (_ opponentId: String) async throws -> ChatRoomDTO
-    var fetchMessages:   @Sendable (_ roomId: String, _ cursorDate: String?) async throws -> ChatMessageListResponseDTO
+    var fetchMessages:   @Sendable (_ roomId: String, _ next: String?) async throws -> ChatMessageListResponseDTO
     var sendMessage:     @Sendable (_ roomId: String, _ body: SendMessageRequestDTO) async throws -> ChatMessageDTO
     var uploadFiles:     @Sendable (_ roomId: String, _ files: [PendingFile]) async throws -> ChatUploadFilesResponseDTO
 }
@@ -25,8 +25,8 @@ extension ChatAPIClient {
             createOrGetRoom: { opponentId in
                 try await network.request(ChatRouter.createOrGetRoom(.init(opponentId: opponentId)))
             },
-            fetchMessages: { roomId, cursorDate in
-                try await network.request(ChatRouter.fetchMessages(roomId: roomId, cursorDate: cursorDate))
+            fetchMessages: { roomId, next in
+                try await network.request(ChatRouter.fetchMessages(roomId: roomId, next: next))
             },
             sendMessage: { roomId, body in
                 try await network.request(ChatRouter.sendMessage(roomId: roomId, body: body))

@@ -11,7 +11,7 @@ import Alamofire
 enum ChatRouter: TargetType {
     case fetchRooms
     case createOrGetRoom(CreateChatRoomRequestDTO)
-    case fetchMessages(roomId: String, cursorDate: String?)
+    case fetchMessages(roomId: String, next: String?)
     case sendMessage(roomId: String, body: SendMessageRequestDTO)
     case uploadFiles(roomId: String, parts: [(data: Data, fileName: String, mimeType: String)])
 }

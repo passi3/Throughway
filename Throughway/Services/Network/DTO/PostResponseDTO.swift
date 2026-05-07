@@ -150,12 +150,25 @@ struct ReplyDTO: Decodable, Sendable {
         case createdAt
     }
 
+    init(commentId: String, content: String, creator: PostCreatorDTO, createdAt: String) {
+        self.commentId = commentId
+        self.content = content
+        self.creator = creator
+        self.createdAt = createdAt
+    }
+
     init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         commentId = container.decodeLossyString(forKey: .commentId)
         content   = try container.decode(String.self, forKey: .content)
         creator   = try container.decode(PostCreatorDTO.self, forKey: .creator)
         createdAt = try container.decode(String.self, forKey: .createdAt)
+    }
+}
+
+extension ReplyDTO {
+    var asUserInfo: UserInfoResponseDTO {
+        creator.asUserInfo
     }
 }
 
@@ -172,6 +185,14 @@ struct CommentDTO: Decodable, Sendable {
         case creator
         case createdAt
         case replies
+    }
+
+    init(commentId: String, content: String, creator: PostCreatorDTO, createdAt: String, replies: [ReplyDTO]) {
+        self.commentId = commentId
+        self.content = content
+        self.creator = creator
+        self.createdAt = createdAt
+        self.replies = replies
     }
 
     init(from decoder: Decoder) throws {
