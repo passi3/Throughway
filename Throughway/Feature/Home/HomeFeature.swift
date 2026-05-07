@@ -12,6 +12,8 @@ enum HomeFeature {
         var newActivities: [ActivitySummaryDTO] = []
         var geoPosts: [PostDTO] = []
         var isLoadingNewActivities: Bool = false
+        var isLoadingMorePosts: Bool = false
+        var nextCursor: String? = nil
         var likeOverrides: [String: Bool] = [:]
         var likeCountOverrides: [String: Int] = [:]
         var commentCountOverrides: [String: Int] = [:]
@@ -24,5 +26,6 @@ enum HomeFeature {
         case fetchNewActivities(country: String?, category: String?)
         case distanceChanged(Double)
         case likeTapped(PostDTO)
+        case loadMorePosts
     }
 }

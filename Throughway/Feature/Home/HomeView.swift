@@ -12,34 +12,79 @@ struct HomeView: View {
     @StateObject private var viewModel = HomeViewModel()
     @State private var selectedCategory: Int = 0
     @State private var selectedFlag: AppFlag = .korea
-    @State private var hasSelectedCategoryFilter = false
     @State private var hasSelectedCountryFilter = false
     @State private var selectedCreator: UserInfoResponseDTO? = nil
     @State private var chatRoom: ChatRoomDTO? = nil
     @State private var selectedPost: PostDTO? = nil
+    @State private var showAllActivities = false
+    @State private var relatedActivityCountry: String? = nil
+    @State private var relatedActivityCategory: String? = nil
+    @State private var homeScrollOffset: CGFloat = 0
 
-    private let categories = ["투어", "관광", "패키지", "익사이팅", "체험"]
+    private let categories = ["전체", "투어", "관광", "패키지", "익사이팅", "체험"]
     private let availableFlags: [AppFlag] = [.korea, .japan, .australia, .philippines, .thailand]
 
     var body: some View {
         NavigationStack {
-            ScrollView {
-                VStack(spacing: 0) {
-                    flagSection
-                        .padding(.top, 12)
+            ZStack {
+                ScrollView {
+                    VStack(spacing: 0) {
+                        scrollOffsetReader
 
-                    categoryTabs
-                        .padding(.top, 12)
+                        flagSection
+                            .padding(.top, 12)
 
-                    featuredSection
-                        .padding(.top, 20)
+                        categoryTabs
+                            .padding(.top, 12)
 
-                    postsSection
-                        .padding(.top, 20)
+                        featuredSection
+                            .padding(.top, 20)
+
+                        postsSection
+                            .padding(.top, 20)
+                    }
+                    .padding(.bottom, 88)
                 }
-                .padding(.bottom, 20)
+                .background(Color.gray0)
+                .coordinateSpace(name: "homeScroll")
+
+                if let post = selectedPost {
+                    PostDetailOverlayView(
+                        post: post,
+                        onDismiss: { selectedPost = nil },
+                        onUserSelected: { user in
+                            selectedCreator = user
+                        },
+                        onRelatedActivitiesTapped: { country, category in
+                            relatedActivityCountry = country
+                            relatedActivityCategory = category
+                            showAllActivities = true
+                        },
+                        onCommentCreated: {
+                            viewModel.incrementCommentCount(for: post.postId)
+                        },
+                        onCommentDeleted: {
+                            viewModel.decrementCommentCount(for: post.postId)
+                        }
+                    )
+                    .transition(.opacity.animation(.easeInOut(duration: 0.2)))
+                    .zIndex(1)
+                }
+
+                if shouldShowCreatePostButton {
+                    VStack {
+                        Spacer()
+                        createPostButton
+                    }
+                    .padding(.horizontal, 16)
+                    .padding(.bottom, 12)
+                    .transition(.move(edge: .bottom).combined(with: .opacity))
+                    .zIndex(0.5)
+                    .allowsHitTesting(false)
+                }
             }
-            .background(Color.gray0)
+            .animation(.spring(response: 0.35, dampingFraction: 0.86), value: shouldShowCreatePostButton)
+            .onPreferenceChange(HomeScrollOffsetKey.self) { homeScrollOffset = $0 }
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
@@ -82,20 +127,11 @@ struct HomeView: View {
             .navigationDestination(item: $chatRoom) { room in
                 ChatDetailView(room: room, myUserId: viewModel.state.myUserId)
             }
-        }
-        .overlay {
-            if let post = selectedPost {
-                PostDetailOverlayView(
-                    post: post,
-                    onDismiss: { selectedPost = nil },
-                    onCommentCreated: {
-                        viewModel.incrementCommentCount(for: post.postId)
-                    },
-                    onCommentDeleted: {
-                        viewModel.decrementCommentCount(for: post.postId)
-                    }
+            .navigationDestination(isPresented: $showAllActivities) {
+                AllActivitiesView(
+                    contextCountry: relatedActivityCountry,
+                    contextCategory: relatedActivityCategory
                 )
-                .transition(.opacity.animation(.easeInOut(duration: 0.2)))
             }
         }
         .task {
@@ -110,6 +146,38 @@ struct HomeView: View {
 // MARK: - Sections
 
 private extension HomeView {
+
+    var shouldShowCreatePostButton: Bool {
+        selectedPost == nil && homeScrollOffset < -24
+    }
+
+    var scrollOffsetReader: some View {
+        GeometryReader { proxy in
+            Color.clear
+                .preference(
+                    key: HomeScrollOffsetKey.self,
+                    value: proxy.frame(in: .named("homeScroll")).minY
+                )
+        }
+        .frame(height: 0)
+    }
+
+    var createPostButton: some View {
+        HStack(spacing: 8) {
+            Image(systemName: "square.and.pencil")
+                .font(.system(size: 15, weight: .semibold))
+
+            Text("포스트 등록")
+                .font(.Pretendard.body3)
+                .fontWeight(.semibold)
+        }
+        .foregroundStyle(Color.gray90)
+        .padding(.horizontal, 18)
+        .padding(.vertical, 14)
+        .background(Color.lightSeafoam)
+        .clipShape(Capsule())
+        .shadow(color: Color.black.opacity(0.12), radius: 14, x: 0, y: 6)
+    }
 
     var flagSection: some View {
         ScrollView(.horizontal, showsIndicators: false) {
@@ -146,7 +214,6 @@ private extension HomeView {
             HStack(spacing: 8) {
                 ForEach(Array(categories.enumerated()), id: \.offset) { index, category in
                     Button {
-                        hasSelectedCategoryFilter = true
                         selectedCategory = index
                     } label: {
                         Text(category)
@@ -166,7 +233,9 @@ private extension HomeView {
 
     var featuredSection: some View {
         VStack(spacing: 12) {
-            sectionHeader(title: "NEW 액티비티", action: "View All")
+            sectionHeader(title: "NEW 액티비티", action: "View All") {
+                showAllActivities = true
+            }
 
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 12) {
@@ -372,9 +441,25 @@ private extension HomeView {
                     }
                     .buttonStyle(.plain)
                 }
+
+                paginationFooter
             }
         }
         .padding(.horizontal, 16)
+    }
+
+    @ViewBuilder
+    var paginationFooter: some View {
+        if viewModel.state.isLoadingMorePosts {
+            ProgressView()
+                .padding(.vertical, 12)
+        } else if viewModel.state.nextCursor != nil {
+            Color.clear
+                .frame(height: 20)
+                .onAppear {
+                    viewModel.send(.loadMorePosts)
+                }
+        }
     }
 
     func activityPost(_ post: PostDTO) -> some View {
@@ -538,7 +623,7 @@ private extension HomeView {
             .clipShape(Capsule())
     }
 
-    func sectionHeader(title: String, action: String) -> some View {
+    func sectionHeader(title: String, action: String, onAction: (() -> Void)? = nil) -> some View {
         HStack {
             Text(title)
                 .font(.Pretendard.body2)
@@ -546,7 +631,7 @@ private extension HomeView {
                 .foregroundStyle(Color.gray90)
             Spacer()
             if !action.isEmpty {
-                Button(action) {}
+                Button(action) { onAction?() }
                     .font(.Pretendard.caption1)
                     .foregroundStyle(Color.blackSeafoam)
             }
@@ -594,7 +679,7 @@ private extension AppFlag {
 
 private extension HomeView {
     var featuredRequestID: String {
-        "\(selectedFlag)-\(selectedCategory)-\(hasSelectedCountryFilter)-\(hasSelectedCategoryFilter)"
+        "\(selectedFlag)-\(selectedCategory)-\(hasSelectedCountryFilter)"
     }
 
     var selectedCountryFilter: String? {
@@ -602,10 +687,15 @@ private extension HomeView {
     }
 
     var selectedCategoryFilter: String? {
-        hasSelectedCategoryFilter ? selectedCategoryName : nil
+        guard selectedCategory > 0, categories.indices.contains(selectedCategory) else { return nil }
+        return categories[selectedCategory]
     }
+}
 
-    var selectedCategoryName: String? {
-        categories.indices.contains(selectedCategory) ? categories[selectedCategory] : nil
+private struct HomeScrollOffsetKey: PreferenceKey {
+    static var defaultValue: CGFloat = 0
+
+    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) {
+        value = nextValue()
     }
 }

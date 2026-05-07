@@ -46,6 +46,10 @@ final class HomeViewModel: BaseViewModel<HomeFeature.State, HomeFeature.Intent> 
 
         case .likeTapped(let post):
             Task { await toggleLike(for: post) }
+
+        case .loadMorePosts:
+            guard !state.isLoadingMorePosts, state.nextCursor != nil else { return }
+            Task { await loadMorePosts() }
         }
     }
 
@@ -157,12 +161,13 @@ final class HomeViewModel: BaseViewModel<HomeFeature.State, HomeFeature.Intent> 
         print("[Home] fetchByGeolocation lat=\(lat) lon=\(lon) distance=\(distanceInMeters)m")
         fetchPostsTask = Task {
             do {
-                let result = try await postClient.fetchByGeolocation(lat, lon, distanceInMeters)
+                let result = try await postClient.fetchByGeolocation(lat, lon, distanceInMeters, nil, nil)
                 if !Task.isCancelled {
                     print("[Home] geoPosts count: \(result.data.count)")
                     reduce {
                         $0.commentCountOverrides = [:]
                         $0.geoPosts = result.data
+                        $0.nextCursor = normalizedNextCursor(result.nextCursor)
                     }
                     await enrichCommentCounts(for: result.data)
                 }
@@ -170,6 +175,35 @@ final class HomeViewModel: BaseViewModel<HomeFeature.State, HomeFeature.Intent> 
                 print("[Home] fetchByGeolocation failed: \(error.localizedDescription)")
             }
         }
+    }
+
+    private func loadMorePosts() async {
+        guard let location = userLocation, let cursor = state.nextCursor else { return }
+        reduce { $0.isLoadingMorePosts = true }
+        let lat = location.coordinate.latitude
+        let lon = location.coordinate.longitude
+        let distanceInMeters = Int(state.distanceKm * 1_000)
+        do {
+            let result = try await postClient.fetchByGeolocation(lat, lon, distanceInMeters, cursor, nil)
+            print("[Home] loadMore geoPosts count: \(result.data.count)")
+            let existingPostIds = Set(state.geoPosts.map(\.postId))
+            let newPosts = result.data.filter { !existingPostIds.contains($0.postId) }
+            reduce {
+                $0.geoPosts.append(contentsOf: newPosts)
+                $0.nextCursor = normalizedNextCursor(result.nextCursor)
+            }
+            await enrichCommentCounts(for: newPosts)
+        } catch {
+            print("[Home] loadMorePosts failed: \(error.localizedDescription)")
+        }
+        reduce { $0.isLoadingMorePosts = false }
+    }
+
+    private func normalizedNextCursor(_ cursor: String?) -> String? {
+        guard let cursor else { return nil }
+        let trimmed = cursor.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty, trimmed != "0" else { return nil }
+        return trimmed
     }
 
     private func enrichCommentCounts(for posts: [PostDTO]) async {
