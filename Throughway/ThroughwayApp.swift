@@ -37,6 +37,14 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         print("Failed to register for remote notifications: \(error)")
     }
     
+    /// 외부 결제 앱(카드사 앱 등)에서 인증·결제 후 돌아올 때 전달되는 URL 처리
+    func application(_ app: UIApplication,
+                     open url: URL,
+                     options: [UIApplication.OpenURLOptionsKey: Any] = [:]) -> Bool {
+        Iamport.shared.receivedURL(url)
+        return true
+    }
+
     func applicationWillTerminate(_ application: UIApplication) {
         AppSession.userId = ""
         Iamport.shared.close()
