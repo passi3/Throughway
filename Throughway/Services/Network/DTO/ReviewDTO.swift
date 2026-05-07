@@ -13,6 +13,12 @@ struct CreateReviewRequestDTO: Encodable, Sendable {
     let rating: Int
     let content: String
     let files: [String]
+    let orderCode: String?
+
+    enum CodingKeys: String, CodingKey {
+        case rating, content, files
+        case orderCode = "order_code"
+    }
 }
 
 struct UpdateReviewRequestDTO: Encodable, Sendable {
