@@ -11,17 +11,17 @@ import Foundation
 final class ProfileViewModel: BaseViewModel<ProfileFeature.State, ProfileFeature.Intent> {
 
     private let userClient: UserAPIClient
-    private let postClient: PostAPIClient
-    private let activityClient: ActivityAPIClient
+    private let orderClient: OrderPaymentAPIClient
+    private let reviewClient: ReviewAPIClient
 
     init(
         userClient: UserAPIClient = .live,
-        postClient: PostAPIClient = .live,
-        activityClient: ActivityAPIClient = .live
+        orderClient: OrderPaymentAPIClient = .live,
+        reviewClient: ReviewAPIClient = .live
     ) {
         self.userClient = userClient
-        self.postClient = postClient
-        self.activityClient = activityClient
+        self.orderClient = orderClient
+        self.reviewClient = reviewClient
         super.init(initialState: .init())
     }
 
@@ -29,19 +29,44 @@ final class ProfileViewModel: BaseViewModel<ProfileFeature.State, ProfileFeature
         switch intent {
         case .onAppear:
             Task { await fetchProfile() }
-        case .tabChanged(let tab):
-            reduce { $0.selectedTab = tab }
+
+        case .searchTextChanged(let text):
+            reduce { $0.searchText = text }
+
+        case .writeReviewTapped(let order):
+            reduce {
+                $0.reviewTarget = order
+                $0.reviewRating = 5
+                $0.reviewContent = ""
+            }
+
+        case .reviewRatingChanged(let rating):
+            reduce { $0.reviewRating = rating }
+
+        case .reviewContentChanged(let text):
+            reduce { $0.reviewContent = text }
+
+        case .submitReview:
+            Task { await submitReview() }
+
+        case .reviewDismissed:
+            reduce { $0.reviewTarget = nil }
+
         case .profileImageSelected(let data):
             Task { await uploadProfileImage(data) }
+
         case .nickEditTapped:
             reduce {
                 $0.nickDraft = $0.profile?.nick ?? ""
                 $0.isEditingNick = true
             }
+
         case .nickChanged(let text):
             reduce { $0.nickDraft = text; $0.nickError = nil }
+
         case .nickSaveTapped:
             Task { await updateNick() }
+
         case .nickEditDismissed:
             reduce { $0.isEditingNick = false; $0.nickError = nil }
         }
@@ -55,33 +80,43 @@ final class ProfileViewModel: BaseViewModel<ProfileFeature.State, ProfileFeature
         do {
             let profile = try await userClient.fetchMyProfile()
             reduce { $0.profile = profile }
-            async let posts: () = fetchPosts(userId: profile.userId)
-            async let reviews: () = fetchReviews(userId: profile.userId)
-            _ = await (posts, reviews)
+            await fetchOrders()
         } catch {
             print("[Profile] fetchProfile failed: \(error.localizedDescription)")
         }
     }
 
-    private func fetchPosts(userId: String) async {
-        reduce { $0.isLoadingPosts = true }
-        defer { reduce { $0.isLoadingPosts = false } }
+    private func fetchOrders() async {
+        reduce { $0.isLoadingOrders = true }
+        defer { reduce { $0.isLoadingOrders = false } }
         do {
-            let result = try await postClient.fetchUserPosts(userId)
-            reduce { $0.posts = result.data }
+            let result = try await orderClient.fetchOrders()
+            reduce { $0.orders = result.data }
         } catch {
-            print("[Profile] fetchPosts failed: \(error.localizedDescription)")
+            print("[Profile] fetchOrders failed: \(error.localizedDescription)")
         }
     }
 
-    private func fetchReviews(userId: String) async {
-        reduce { $0.isLoadingReviews = true }
-        defer { reduce { $0.isLoadingReviews = false } }
+    private func submitReview() async {
+        guard let order = state.reviewTarget else { return }
+        let content = state.reviewContent.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !content.isEmpty else { return }
+
+        reduce { $0.isSubmittingReview = true }
+        defer { reduce { $0.isSubmittingReview = false } }
+
         do {
-            let result = try await activityClient.fetchUserReviews(userId)
-            reduce { $0.reviews = result.data }
+            let dto = CreateReviewRequestDTO(
+                rating: state.reviewRating,
+                content: content,
+                files: [],
+                orderCode: order.orderCode
+            )
+            _ = try await reviewClient.createReview(order.activity.activityId, dto)
+            reduce { $0.reviewTarget = nil }
+            await fetchOrders()
         } catch {
-            print("[Profile] fetchReviews failed: \(error.localizedDescription)")
+            print("[Profile] submitReview failed: \(error.localizedDescription)")
         }
     }
 
