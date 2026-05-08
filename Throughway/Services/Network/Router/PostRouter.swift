@@ -11,7 +11,7 @@ import Alamofire
 enum PostRouter: TargetType {
     case uploadFiles([Data])
     case createPost(CreatePostRequestDTO)
-    case fetchByGeolocation(latitude: Double, longitude: Double, distance: Int, next: String?, limit: Int?)
+    case fetchByGeolocation(latitude: Double, longitude: Double, maxDistance: Int?, next: String?, limit: Int?)
     case searchByTitle(query: String)
     case fetchDetail(postId: String)
     case updatePost(postId: String, UpdatePostRequestDTO)
@@ -96,14 +96,14 @@ extension PostRouter {
 
     var queryItems: [URLQueryItem]? {
         switch self {
-        case .fetchByGeolocation(let lat, let lon, let distance, let next, let limit):
+        case .fetchByGeolocation(let lat, let lon, let maxDistance, let next, let limit):
             var items: [URLQueryItem] = [
                 URLQueryItem(name: "latitude",  value: "\(lat)"),
-                URLQueryItem(name: "longitude", value: "\(lon)"),
-                URLQueryItem(name: "distance",  value: "\(distance)")
+                URLQueryItem(name: "longitude", value: "\(lon)")
             ]
-            if let next  { items.append(URLQueryItem(name: "next",  value: next)) }
-            if let limit { items.append(URLQueryItem(name: "limit", value: "\(limit)")) }
+            if let maxDistance { items.append(URLQueryItem(name: "maxDistance", value: "\(maxDistance)")) }
+            if let next        { items.append(URLQueryItem(name: "next",        value: next)) }
+            if let limit       { items.append(URLQueryItem(name: "limit",       value: "\(limit)")) }
             return items
         case .searchByTitle(let query):
             return [URLQueryItem(name: "title", value: query)]

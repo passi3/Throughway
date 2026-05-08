@@ -41,7 +41,13 @@ final class HomeViewModel: BaseViewModel<HomeFeature.State, HomeFeature.Intent> 
             Task { await fetchNewActivities(country: country, category: category) }
 
         case .distanceChanged(let distanceKm):
+            print("[Home] distanceChanged: \(distanceKm)km")
             reduce { $0.distanceKm = distanceKm }
+            if state.isDistanceEnabled { scheduleFetchPosts() }
+
+        case .distanceToggled:
+            reduce { $0.isDistanceEnabled.toggle() }
+            print("[Home] distanceEnabled: \(state.isDistanceEnabled)")
             scheduleFetchPosts()
 
         case .likeTapped(let post):
@@ -157,11 +163,11 @@ final class HomeViewModel: BaseViewModel<HomeFeature.State, HomeFeature.Intent> 
         fetchPostsTask?.cancel()
         let lat = location.coordinate.latitude
         let lon = location.coordinate.longitude
-        let distanceInMeters = Int(state.distanceKm * 1_000)
-        print("[Home] fetchByGeolocation lat=\(lat) lon=\(lon) distance=\(distanceInMeters)m")
+        let maxDistance: Int? = state.isDistanceEnabled ? Int(state.distanceKm * 1_000) : nil
+        print("[Home] fetchByGeolocation lat=\(lat) lon=\(lon) maxDistance=\(maxDistance.map { "\($0)m" } ?? "전체")")
         fetchPostsTask = Task {
             do {
-                let result = try await postClient.fetchByGeolocation(lat, lon, distanceInMeters, nil, nil)
+                let result = try await postClient.fetchByGeolocation(lat, lon, maxDistance, nil, nil)
                 if !Task.isCancelled {
                     print("[Home] geoPosts count: \(result.data.count)")
                     reduce {
@@ -182,9 +188,9 @@ final class HomeViewModel: BaseViewModel<HomeFeature.State, HomeFeature.Intent> 
         reduce { $0.isLoadingMorePosts = true }
         let lat = location.coordinate.latitude
         let lon = location.coordinate.longitude
-        let distanceInMeters = Int(state.distanceKm * 1_000)
+        let maxDistance: Int? = state.isDistanceEnabled ? Int(state.distanceKm * 1_000) : nil
         do {
-            let result = try await postClient.fetchByGeolocation(lat, lon, distanceInMeters, cursor, nil)
+            let result = try await postClient.fetchByGeolocation(lat, lon, maxDistance, cursor, nil)
             print("[Home] loadMore geoPosts count: \(result.data.count)")
             let existingPostIds = Set(state.geoPosts.map(\.postId))
             let newPosts = result.data.filter { !existingPostIds.contains($0.postId) }

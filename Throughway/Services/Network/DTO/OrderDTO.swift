@@ -46,8 +46,8 @@ struct CreateOrderResponseDTO: Decodable, Sendable {
 // MARK: - List Item (POST /v1/orders)
 
 struct OrderReviewSummaryDTO: Decodable, Sendable {
-    let reviewId: String
-    let rating: Int
+    let reviewId: String?
+    let rating: Int?
 
     enum CodingKeys: String, CodingKey {
         case reviewId = "review_id"

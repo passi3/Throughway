@@ -262,16 +262,13 @@ private extension HomeView {
                 // Background image
                 Group {
                     if let thumbnail = activity.thumbnails.first {
-                        KFImage(thumbnail.serverImageURL)
-                            .requestModifier(AuthImageModifier())
-                            .placeholder { cardImagePlaceholder }
-                            .resizable()
-                            .scaledToFill()
+                        MediaThumbnailView(path: thumbnail, height: 340, cornerRadius: 0)
+                            .frame(width: 260)
                     } else {
                         cardImagePlaceholder
+                            .frame(width: 260, height: 340)
                     }
                 }
-                .frame(width: 260, height: 340)
                 .clipped()
 
                 // Gradient overlay
@@ -398,7 +395,9 @@ private extension HomeView {
             // Distance slider
             VStack(spacing: 8) {
                 HStack {
-                    Text(String(format: "Distance %.0fKM", viewModel.state.distanceKm))
+                    Text(viewModel.state.isDistanceEnabled
+                         ? String(format: "Distance %.0fKM", viewModel.state.distanceKm)
+                         : "Distance 전체")
                         .font(.Pretendard.body3)
                         .fontWeight(.semibold)
                         .foregroundStyle(Color.blackSeafoam)
@@ -406,15 +405,30 @@ private extension HomeView {
                 }
                 .padding(.horizontal, 16)
 
-                Slider(
-                    value: Binding(
-                        get: { viewModel.state.distanceKm },
-                        set: { viewModel.send(.distanceChanged($0)) }
-                    ),
-                    in: 0...5,
-                    step: 1
-                )
-                .tint(Color.blackSeafoam)
+                HStack(spacing: 12) {
+                    Button {
+                        viewModel.send(.distanceToggled)
+                    } label: {
+                        Image(systemName: viewModel.state.isDistanceEnabled ? "location.fill" : "location.slash.fill")
+                            .font(.system(size: 14, weight: .semibold))
+                            .foregroundStyle(viewModel.state.isDistanceEnabled ? Color.gray0 : Color.gray45)
+                            .frame(width: 36, height: 36)
+                            .background(viewModel.state.isDistanceEnabled ? Color.blackSeafoam : Color.gray15)
+                            .clipShape(Circle())
+                    }
+
+                    Slider(
+                        value: Binding(
+                            get: { viewModel.state.distanceKm },
+                            set: { viewModel.send(.distanceChanged($0)) }
+                        ),
+                        in: 1...50,
+                        step: 1
+                    )
+                    .tint(Color.blackSeafoam)
+                    .disabled(!viewModel.state.isDistanceEnabled)
+                    .opacity(viewModel.state.isDistanceEnabled ? 1 : 0.3)
+                }
                 .padding(.horizontal, 16)
             }
             .padding(.top, 12)
@@ -426,7 +440,7 @@ private extension HomeView {
     }
 
     var activityFeed: some View {
-        VStack(spacing: 16) {
+        LazyVStack(spacing: 16) {
             if viewModel.state.geoPosts.isEmpty {
                 Text("주변 게시물이 없습니다")
                     .font(.Pretendard.body3)
@@ -523,23 +537,30 @@ private extension HomeView {
             .padding(.horizontal, 14)
             .padding(.bottom, 12)
 
-            // 3. 이미지 (1×n 가로 스크롤)
+            // 3. 이미지/비디오 (1×n 가로 스크롤)
             if !post.files.isEmpty {
                 ScrollView(.horizontal, showsIndicators: false) {
                     HStack(spacing: 6) {
                         ForEach(post.files.indices, id: \.self) { index in
-                            KFImage(post.files[index].serverImageURL)
-                                .requestModifier(AuthImageModifier())
-                                .placeholder {
-                                    RoundedRectangle(cornerRadius: 8)
-                                        .fill(Color.gray15)
-                                        .overlay(Image(systemName: "photo").foregroundStyle(Color.gray30))
-                                }
-                                .resizable()
-                                .scaledToFill()
-                                .frame(width: post.files.count == 1 ? nil : 200, height: 220)
-                                .frame(maxWidth: post.files.count == 1 ? .infinity : nil)
-                                .clipShape(RoundedRectangle(cornerRadius: 8))
+                            let file = post.files[index]
+                            if file.isVideoPath {
+                                MediaThumbnailView(path: file, height: 220, cornerRadius: 8)
+                                    .frame(width: post.files.count == 1 ? nil : 200)
+                                    .frame(maxWidth: post.files.count == 1 ? .infinity : nil)
+                            } else {
+                                KFImage(file.serverImageURL)
+                                    .requestModifier(AuthImageModifier())
+                                    .placeholder {
+                                        RoundedRectangle(cornerRadius: 8)
+                                            .fill(Color.gray15)
+                                            .overlay(Image(systemName: "photo").foregroundStyle(Color.gray30))
+                                    }
+                                    .resizable()
+                                    .scaledToFill()
+                                    .frame(width: post.files.count == 1 ? nil : 200, height: 220)
+                                    .frame(maxWidth: post.files.count == 1 ? .infinity : nil)
+                                    .clipShape(RoundedRectangle(cornerRadius: 8))
+                            }
                         }
                     }
                     .padding(.horizontal, 14)

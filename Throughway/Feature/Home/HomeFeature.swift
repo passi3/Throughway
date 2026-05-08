@@ -18,6 +18,7 @@ enum HomeFeature {
         var likeCountOverrides: [String: Int] = [:]
         var commentCountOverrides: [String: Int] = [:]
         var distanceKm: Double = 5.0
+        var isDistanceEnabled: Bool = false
         var myUserId: String = ""
     }
 
@@ -25,6 +26,7 @@ enum HomeFeature {
         case start
         case fetchNewActivities(country: String?, category: String?)
         case distanceChanged(Double)
+        case distanceToggled
         case likeTapped(PostDTO)
         case loadMorePosts
     }
