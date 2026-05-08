@@ -166,7 +166,7 @@ struct UserProfileView: View {
             LazyVGrid(columns: columns, spacing: 2) {
                 ForEach(viewModel.state.posts, id: \.postId) { post in
                     gridThumbnail(
-                        imageURL: post.files.first?.serverImageURL,
+                        path: post.files.first,
                         hasMultiple: post.files.count > 1
                     )
                 }
@@ -189,7 +189,7 @@ struct UserProfileView: View {
             LazyVGrid(columns: columns, spacing: 2) {
                 ForEach(viewModel.state.reviews, id: \.activityId) { activity in
                     gridThumbnail(
-                        imageURL: activity.thumbnails.first?.serverImageURL,
+                        path: activity.thumbnails.first,
                         hasMultiple: false
                     )
                     .overlay(alignment: .bottomLeading) {
@@ -216,23 +216,31 @@ struct UserProfileView: View {
 
     // MARK: - Shared
 
-    private func gridThumbnail(imageURL: URL?, hasMultiple: Bool) -> some View {
+    private func gridThumbnail(path: String?, hasMultiple: Bool) -> some View {
         GeometryReader { geo in
             Group {
-                if let url = imageURL {
-                    KFImage(url)
-                        .setProcessor(DownsamplingImageProcessor(size: CGSize(width: 200, height: 200)))
-                        .requestModifier(AuthImageModifier())
-                        .resizable()
-                        .scaledToFill()
+                if let path {
+                    if path.isVideoPath {
+                        if let url = path.serverImageURL {
+                            LoopingVideoView(url: url)
+                                .frame(width: geo.size.width, height: geo.size.width)
+                                .clipped()
+                        } else {
+                            gridPlaceholder(size: geo.size.width)
+                        }
+                    } else if let url = path.serverImageURL {
+                        KFImage(url)
+                            .setProcessor(DownsamplingImageProcessor(size: CGSize(width: 200, height: 200)))
+                            .requestModifier(AuthImageModifier())
+                            .resizable()
+                            .scaledToFill()
+                            .frame(width: geo.size.width, height: geo.size.width)
+                            .clipped()
+                    } else {
+                        gridPlaceholder(size: geo.size.width)
+                    }
                 } else {
-                    Rectangle()
-                        .fill(Color.gray15)
-                        .overlay(
-                            Image(systemName: "photo")
-                                .font(.system(size: 20))
-                                .foregroundStyle(Color.gray30)
-                        )
+                    gridPlaceholder(size: geo.size.width)
                 }
             }
             .frame(width: geo.size.width, height: geo.size.width)
@@ -248,6 +256,17 @@ struct UserProfileView: View {
             }
         }
         .aspectRatio(1, contentMode: .fit)
+    }
+
+    private func gridPlaceholder(size: CGFloat) -> some View {
+        Rectangle()
+            .fill(Color.gray15)
+            .frame(width: size, height: size)
+            .overlay(
+                Image(systemName: "photo")
+                    .font(.system(size: 20))
+                    .foregroundStyle(Color.gray30)
+            )
     }
 
     private func emptyView(text: String, icon: String) -> some View {
