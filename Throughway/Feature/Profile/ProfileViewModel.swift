@@ -9,11 +9,11 @@ import Foundation
 
 @MainActor
 final class ProfileViewModel: BaseViewModel<ProfileFeature.State, ProfileFeature.Intent> {
-
+    
     private let userClient: UserAPIClient
     private let orderClient: OrderPaymentAPIClient
     private let reviewClient: ReviewAPIClient
-
+    
     init(
         userClient: UserAPIClient = .live,
         orderClient: OrderPaymentAPIClient = .live,
@@ -24,56 +24,56 @@ final class ProfileViewModel: BaseViewModel<ProfileFeature.State, ProfileFeature
         self.reviewClient = reviewClient
         super.init(initialState: .init())
     }
-
+    
     override func send(_ intent: ProfileFeature.Intent) {
         switch intent {
         case .onAppear:
             Task { await fetchProfile() }
-
+            
         case .searchTextChanged(let text):
             reduce { $0.searchText = text }
-
+            
         case .writeReviewTapped(let order):
             reduce {
                 $0.reviewTarget = order
                 $0.reviewRating = 5
                 $0.reviewContent = ""
             }
-
+            
         case .reviewRatingChanged(let rating):
             reduce { $0.reviewRating = rating }
-
+            
         case .reviewContentChanged(let text):
             reduce { $0.reviewContent = text }
-
+            
         case .submitReview:
             Task { await submitReview() }
-
+            
         case .reviewDismissed:
             reduce { $0.reviewTarget = nil }
-
+            
         case .profileImageSelected(let data):
             Task { await uploadProfileImage(data) }
-
+            
         case .nickEditTapped:
             reduce {
                 $0.nickDraft = $0.profile?.nick ?? ""
                 $0.isEditingNick = true
             }
-
+            
         case .nickChanged(let text):
             reduce { $0.nickDraft = text; $0.nickError = nil }
-
+            
         case .nickSaveTapped:
             Task { await updateNick() }
-
+            
         case .nickEditDismissed:
             reduce { $0.isEditingNick = false; $0.nickError = nil }
         }
     }
-
+    
     // MARK: - Private
-
+    
     private func fetchProfile() async {
         reduce { $0.isLoadingProfile = true }
         defer { reduce { $0.isLoadingProfile = false } }
@@ -85,7 +85,7 @@ final class ProfileViewModel: BaseViewModel<ProfileFeature.State, ProfileFeature
             print("[Profile] fetchProfile failed: \(error.localizedDescription)")
         }
     }
-
+    
     private func fetchOrders() async {
         reduce { $0.isLoadingOrders = true }
         defer { reduce { $0.isLoadingOrders = false } }
@@ -96,15 +96,15 @@ final class ProfileViewModel: BaseViewModel<ProfileFeature.State, ProfileFeature
             print("[Profile] fetchOrders failed: \(error.localizedDescription)")
         }
     }
-
+    
     private func submitReview() async {
         guard let order = state.reviewTarget else { return }
         let content = state.reviewContent.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !content.isEmpty else { return }
-
+        
         reduce { $0.isSubmittingReview = true }
         defer { reduce { $0.isSubmittingReview = false } }
-
+        
         do {
             let dto = CreateReviewRequestDTO(
                 rating: state.reviewRating,
@@ -119,7 +119,7 @@ final class ProfileViewModel: BaseViewModel<ProfileFeature.State, ProfileFeature
             print("[Profile] submitReview failed: \(error.localizedDescription)")
         }
     }
-
+    
     private func uploadProfileImage(_ data: Data) async {
         reduce { $0.isUploadingImage = true }
         defer { reduce { $0.isUploadingImage = false } }
@@ -136,7 +136,7 @@ final class ProfileViewModel: BaseViewModel<ProfileFeature.State, ProfileFeature
             print("[Profile] uploadProfileImage failed: \(error.localizedDescription)")
         }
     }
-
+    
     private func updateNick() async {
         let draft = state.nickDraft
         if let error = validateNick(draft) {
@@ -154,7 +154,7 @@ final class ProfileViewModel: BaseViewModel<ProfileFeature.State, ProfileFeature
             print("[Profile] updateNick failed: \(error.localizedDescription)")
         }
     }
-
+    
     private func validateNick(_ nick: String) -> String? {
         if nick.isEmpty { return "닉네임을 입력해주세요" }
         let invalid = CharacterSet(charactersIn: "-.,?*@+^${}()|[]\\")

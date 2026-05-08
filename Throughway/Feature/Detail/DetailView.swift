@@ -101,12 +101,7 @@ private extension DetailView {
             } else {
                 TabView {
                     ForEach(viewModel.thumbnails, id: \.self) { path in
-                        KFImage(path.serverImageURL)
-                            .requestModifier(AuthImageModifier())
-                            .placeholder { heroPlaceholder }
-                            .resizable()
-                            .scaledToFill()
-                            .clipped()
+                        MediaThumbnailView(path: path, height: 300, cornerRadius: 0)
                     }
                 }
                 .tabViewStyle(.page(indexDisplayMode: viewModel.thumbnails.count > 1 ? .automatic : .never))

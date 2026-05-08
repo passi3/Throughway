@@ -345,7 +345,7 @@ private extension ProfileView {
                 Image(systemName: "star.fill")
                     .font(.system(size: 11))
                     .foregroundStyle(Color.deepSeafoam)
-                Text(String(format: "%.1f", Double(review.rating)))
+                Text(String(format: "%.1f", Double(review.rating ?? 0)))
                     .font(.Pretendard.caption1)
                     .fontWeight(.medium)
                     .foregroundStyle(Color.gray60)
@@ -368,15 +368,18 @@ private extension ProfileView {
 
     func orderThumbnail(_ path: String?) -> some View {
         Group {
-            if let path, let url = path.serverImageURL {
-                KFImage(url)
-                    .setProcessor(DownsamplingImageProcessor(size: CGSize(width: 160, height: 160)))
-                    .requestModifier(AuthImageModifier())
-                    .resizable()
-                    .scaledToFill()
+            if let path {
+                if path.isVideoPath {
+                    VideoThumbnailView(path: path, height: 80, cornerRadius: 8)
+                        .frame(width: 80)
+                } else {
+                    MediaThumbnailView(path: path, height: 80, cornerRadius: 8)
+                        .frame(width: 80)
+                }
             } else {
-                Rectangle()
+                RoundedRectangle(cornerRadius: 8)
                     .fill(Color.gray15)
+                    .frame(width: 80, height: 80)
                     .overlay(
                         Image(systemName: "photo")
                             .font(.system(size: 20))
@@ -384,8 +387,6 @@ private extension ProfileView {
                     )
             }
         }
-        .frame(width: 80, height: 80)
-        .clipShape(RoundedRectangle(cornerRadius: 8))
     }
 }
 

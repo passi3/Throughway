@@ -244,11 +244,7 @@ struct ActivityCard: View {
     @ViewBuilder
     private var activityThumbnail: some View {
         if let thumbnail = activity.thumbnails.first {
-            KFImage(thumbnail.serverImageURL)
-                .requestModifier(AuthImageModifier())
-                .placeholder { thumbnailPlaceholder }
-                .resizable()
-                .scaledToFill()
+            MediaThumbnailView(path: thumbnail, height: 100, cornerRadius: 10)
         } else {
             thumbnailPlaceholder
         }

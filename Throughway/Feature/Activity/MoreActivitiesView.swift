@@ -384,21 +384,12 @@ private extension MoreActivitiesView {
     func thumbnailImage(_ activity: ActivitySummaryDTO, height: CGFloat, radius: CGFloat) -> some View {
         Group {
             if let thumb = activity.thumbnails.first {
-                KFImage(thumb.serverImageURL)
-                    .requestModifier(AuthImageModifier())
-                    .placeholder {
-                        imagePlaceholder(radius: radius)
-                    }
-                    .resizable()
-                    .scaledToFill()
+                MediaThumbnailView(path: thumb, height: height, cornerRadius: radius)
             } else {
                 imagePlaceholder(radius: radius)
+                    .frame(height: height)
             }
         }
-        .frame(maxWidth: .infinity)
-        .frame(height: height)
-        .clipped()
-        .clipShape(RoundedRectangle(cornerRadius: radius))
     }
 
     func imagePlaceholder(radius: CGFloat) -> some View {
