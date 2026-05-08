@@ -10,7 +10,7 @@ import Foundation
 struct PostAPIClient {
     var uploadFiles:        @Sendable ([Data]) async throws -> PostFilesResponseDTO
     var createPost:         @Sendable (CreatePostRequestDTO) async throws -> PostDTO
-    var fetchByGeolocation: @Sendable (Double, Double, Int, String?, Int?) async throws -> PostListResponseDTO
+    var fetchByGeolocation: @Sendable (Double, Double, Int?, String?, Int?) async throws -> PostListResponseDTO
     var searchByTitle:      @Sendable (String) async throws -> PostListResponseDTO
     var fetchDetail:        @Sendable (String) async throws -> PostDTO
     var updatePost:         @Sendable (String, UpdatePostRequestDTO) async throws -> PostDTO
@@ -33,8 +33,8 @@ extension PostAPIClient {
             createPost: { dto in
                 try await network.request(PostRouter.createPost(dto))
             },
-            fetchByGeolocation: { lat, lon, distance, next, limit in
-                try await network.request(PostRouter.fetchByGeolocation(latitude: lat, longitude: lon, distance: distance, next: next, limit: limit))
+            fetchByGeolocation: { lat, lon, maxDistance, next, limit in
+                try await network.request(PostRouter.fetchByGeolocation(latitude: lat, longitude: lon, maxDistance: maxDistance, next: next, limit: limit))
             },
             searchByTitle: { query in
                 try await network.request(PostRouter.searchByTitle(query: query))
