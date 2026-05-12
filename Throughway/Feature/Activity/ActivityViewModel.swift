@@ -111,10 +111,12 @@ final class ActivityViewModel: BaseViewModel<ActivityFeature.State, ActivityFeat
 final class ActivitySearchViewModel: BaseViewModel<ActivitySearchFeature.State, ActivitySearchFeature.Intent> {
 
     private let activityClient: ActivityAPIClient
+    private let bannerClient: BannerAPIClient
     private var keepObserver: NSObjectProtocol?
 
-    init(activityClient: ActivityAPIClient = .live) {
+    init(activityClient: ActivityAPIClient = .live, bannerClient: BannerAPIClient = .live) {
         self.activityClient = activityClient
+        self.bannerClient = bannerClient
         super.init(initialState: .init())
         observeKeepChanges()
     }
@@ -125,6 +127,9 @@ final class ActivitySearchViewModel: BaseViewModel<ActivitySearchFeature.State, 
 
     override func send(_ intent: ActivitySearchFeature.Intent) {
         switch intent {
+        case .onAppear:
+            Task { await fetchBanners() }
+
         case .searchSubmitted(let query):
             Task { await search(query: query) }
 
@@ -136,6 +141,23 @@ final class ActivitySearchViewModel: BaseViewModel<ActivitySearchFeature.State, 
 
         case .keepUpdated(let activityId, let isKeep, let keepCount):
             reduce { $0.keepOverrides[activityId] = (isKeep, keepCount) }
+
+        case .bannerTapped(let banner):
+            guard banner.payload.type == "WEBVIEW",
+                  let url = URL(string: APIConstants.baseURL + banner.payload.value) else { return }
+            reduce { $0.webViewURL = url }
+
+        case .webViewDismissed:
+            reduce { $0.webViewURL = nil }
+        }
+    }
+
+    private func fetchBanners() async {
+        do {
+            let result = try await bannerClient.fetchMain()
+            reduce { $0.banners = result.data }
+        } catch {
+            print("[Banner] fetchMain failed: \(error.localizedDescription)")
         }
     }
 
