@@ -16,6 +16,8 @@ final class HomeViewModel: BaseViewModel<HomeFeature.State, HomeFeature.Intent> 
     private let userClient: UserAPIClient
     private let locationManager = CLLocationManager()
     private var userLocation: CLLocation?
+    var currentLatitude: Double? { userLocation?.coordinate.latitude }
+    var currentLongitude: Double? { userLocation?.coordinate.longitude }
     private var fetchPostsTask: Task<Void, Never>?
     private var isAwaitingLocationForPosts = false
 
@@ -56,6 +58,17 @@ final class HomeViewModel: BaseViewModel<HomeFeature.State, HomeFeature.Intent> 
         case .loadMorePosts:
             guard !state.isLoadingMorePosts, state.nextCursor != nil else { return }
             Task { await loadMorePosts() }
+
+        case .refreshPosts:
+            reduce { $0.geoPosts = []; $0.nextCursor = nil }
+            scheduleFetchPosts()
+
+        case .sortChanged(let order):
+            reduce { $0.sortOrder = order; $0.geoPosts = []; $0.nextCursor = nil }
+            scheduleFetchPosts()
+
+        case .deletePost(let postId):
+            Task { await _deletePost(postId: postId) }
         }
     }
 
@@ -142,6 +155,7 @@ final class HomeViewModel: BaseViewModel<HomeFeature.State, HomeFeature.Intent> 
 
         do {
             _ = try await postClient.toggleLike(post.postId, newStatus)
+            InteractionCache.shared.setLiked(post.postId, isLiked: newStatus)
         } catch {
             print("[Home] toggleLike failed: \(error.localizedDescription)")
             // Revert
@@ -164,12 +178,14 @@ final class HomeViewModel: BaseViewModel<HomeFeature.State, HomeFeature.Intent> 
         let lat = location.coordinate.latitude
         let lon = location.coordinate.longitude
         let maxDistance: Int? = state.isDistanceEnabled ? Int(state.distanceKm * 1_000) : nil
-        print("[Home] fetchByGeolocation lat=\(lat) lon=\(lon) maxDistance=\(maxDistance.map { "\($0)m" } ?? "전체")")
+        let sortOrder = state.sortOrder
+        print("[Home] fetchByGeolocation lat=\(lat) lon=\(lon) maxDistance=\(maxDistance.map { "\($0)m" } ?? "전체") orderBy=\(sortOrder)")
         fetchPostsTask = Task {
             do {
-                let result = try await postClient.fetchByGeolocation(lat, lon, maxDistance, nil, nil)
+                let result = try await postClient.fetchByGeolocation(lat, lon, maxDistance, nil, nil, sortOrder)
                 if !Task.isCancelled {
                     print("[Home] geoPosts count: \(result.data.count)")
+                    result.data.forEach { InteractionCache.shared.setLiked($0.postId, isLiked: $0.isLike) }
                     reduce {
                         $0.commentCountOverrides = [:]
                         $0.geoPosts = result.data
@@ -178,7 +194,7 @@ final class HomeViewModel: BaseViewModel<HomeFeature.State, HomeFeature.Intent> 
                     await enrichCommentCounts(for: result.data)
                 }
             } catch {
-                print("[Home] fetchByGeolocation failed: \(error.localizedDescription)")
+                print("[Home] fetchByGeolocation failed: \(error)")
             }
         }
     }
@@ -190,10 +206,11 @@ final class HomeViewModel: BaseViewModel<HomeFeature.State, HomeFeature.Intent> 
         let lon = location.coordinate.longitude
         let maxDistance: Int? = state.isDistanceEnabled ? Int(state.distanceKm * 1_000) : nil
         do {
-            let result = try await postClient.fetchByGeolocation(lat, lon, maxDistance, cursor, nil)
+            let result = try await postClient.fetchByGeolocation(lat, lon, maxDistance, cursor, nil, state.sortOrder)
             print("[Home] loadMore geoPosts count: \(result.data.count)")
             let existingPostIds = Set(state.geoPosts.map(\.postId))
             let newPosts = result.data.filter { !existingPostIds.contains($0.postId) }
+            newPosts.forEach { InteractionCache.shared.setLiked($0.postId, isLiked: $0.isLike) }
             reduce {
                 $0.geoPosts.append(contentsOf: newPosts)
                 $0.nextCursor = normalizedNextCursor(result.nextCursor)
@@ -203,6 +220,21 @@ final class HomeViewModel: BaseViewModel<HomeFeature.State, HomeFeature.Intent> 
             print("[Home] loadMorePosts failed: \(error.localizedDescription)")
         }
         reduce { $0.isLoadingMorePosts = false }
+    }
+
+    private func _deletePost(postId: String) async {
+        do {
+            try await postClient.deletePost(postId)
+            reduce {
+                $0.geoPosts.removeAll { $0.postId == postId }
+                $0.commentCountOverrides.removeValue(forKey: postId)
+                $0.likeOverrides.removeValue(forKey: postId)
+                $0.likeCountOverrides.removeValue(forKey: postId)
+            }
+            scheduleFetchPosts()
+        } catch {
+            print("[Home] deletePost failed: \(error)")
+        }
     }
 
     private func normalizedNextCursor(_ cursor: String?) -> String? {

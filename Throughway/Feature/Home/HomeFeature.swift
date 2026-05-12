@@ -19,6 +19,7 @@ enum HomeFeature {
         var commentCountOverrides: [String: Int] = [:]
         var distanceKm: Double = 5.0
         var isDistanceEnabled: Bool = false
+        var sortOrder: String = "createdAt"
         var myUserId: String = ""
     }
 
@@ -29,5 +30,8 @@ enum HomeFeature {
         case distanceToggled
         case likeTapped(PostDTO)
         case loadMorePosts
+        case refreshPosts
+        case sortChanged(String)
+        case deletePost(String)
     }
 }
