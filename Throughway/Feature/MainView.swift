@@ -23,7 +23,7 @@ struct MainView: View {
                 }
                 .tag(0)
 
-            ActivityView()
+            ActivitySearchView()
                 .tabItem {
                     Label("검색", image: selectedTab == 1 ? "icon_tab_search_fill" : "icon_tab_search")
                 }
