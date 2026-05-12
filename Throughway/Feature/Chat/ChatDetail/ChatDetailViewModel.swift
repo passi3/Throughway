@@ -131,7 +131,14 @@ final class ChatDetailViewModel: BaseViewModel<ChatDetailFeature.State, ChatDeta
             guard message.roomId == room.roomId else { continue }
             guard !state.messages.contains(where: { $0.chatId == message.chatId }) else { continue }
             chatRepo.save(message: message)
-            reduce { $0.messages.append(message) }
+            reduce { s in
+                // 내가 보낸 메시지가 소켓으로 먼저 도착한 경우 matching pending을 제거해 중복 표시 방지
+                if message.sender.userId == s.myUserId,
+                   let idx = s.pendingMessages.firstIndex(where: { $0.content == message.content && !$0.isFailed }) {
+                    s.pendingMessages.remove(at: idx)
+                }
+                s.messages.append(message)
+            }
         }
     }
 
@@ -189,10 +196,12 @@ final class ChatDetailViewModel: BaseViewModel<ChatDetailFeature.State, ChatDeta
             }
             let dto = SendMessageRequestDTO(content: pending.content, files: fileURLs)
             let sent = try await chatClient.sendMessage(room.roomId, dto)
-            reduce { $0.pendingMessages.removeAll { $0.id == pending.id } }
-            if !state.messages.contains(where: { $0.chatId == sent.chatId }) {
-                chatRepo.save(message: sent)
-                reduce { $0.messages.append(sent) }
+            reduce { s in
+                s.pendingMessages.removeAll { $0.id == pending.id }
+                if !s.messages.contains(where: { $0.chatId == sent.chatId }) {
+                    self.chatRepo.save(message: sent)
+                    s.messages.append(sent)
+                }
             }
         } catch {
             print("[ChatDetail] sendMessage error:", error)
