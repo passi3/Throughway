@@ -100,8 +100,14 @@ private extension DetailView {
                     .frame(height: 300)
             } else {
                 TabView {
-                    ForEach(viewModel.thumbnails, id: \.self) { path in
-                        MediaThumbnailView(path: path, height: 300, cornerRadius: 0)
+                    ForEach(viewModel.thumbnails.indices, id: \.self) { index in
+                        MediaThumbnailView(
+                            path: viewModel.thumbnails[index],
+                            height: 300,
+                            cornerRadius: 0,
+                            paths: viewModel.thumbnails,
+                            initialIndex: index
+                        )
                     }
                 }
                 .tabViewStyle(.page(indexDisplayMode: viewModel.thumbnails.count > 1 ? .automatic : .never))

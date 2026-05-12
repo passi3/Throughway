@@ -145,17 +145,13 @@ private extension PostDetailOverlayView {
         if !files.isEmpty {
             TabView {
                 ForEach(files.indices, id: \.self) { index in
-                    KFImage(files[index].serverImageURL)
-                        .requestModifier(AuthImageModifier())
-                        .placeholder {
-                            Rectangle()
-                                .fill(Color.gray15)
-                                .overlay(Image(systemName: "photo").foregroundStyle(Color.gray30))
-                        }
-                        .resizable()
-                        .scaledToFill()
-                        .frame(maxWidth: .infinity)
-                        .clipped()
+                    MediaThumbnailView(
+                        path: files[index],
+                        height: 280,
+                        cornerRadius: 0,
+                        paths: files,
+                        initialIndex: index
+                    )
                 }
             }
             .tabViewStyle(.page(indexDisplayMode: files.count > 1 ? .automatic : .never))
