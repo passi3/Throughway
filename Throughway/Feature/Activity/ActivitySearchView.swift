@@ -6,47 +6,49 @@
 //
 
 import SwiftUI
+import Kingfisher
 
 struct ActivitySearchView: View {
-    @Environment(\.dismiss) private var dismiss
     @StateObject private var viewModel = ActivitySearchViewModel()
     @State private var keyword: String = ""
     @FocusState private var isFocused: Bool
 
     var body: some View {
         NavigationStack {
-            VStack(spacing: 0) {
-                searchBar
+            ScrollView {
+                VStack(spacing: 0) {
+                    heroHeader
 
-                Divider()
-                    .background(Color.gray15)
+                    searchBar
+                        .padding(.top, 12)
 
-                searchContent
+                    Divider()
+                        .background(Color.gray15)
+
+                    searchContent
+                }
             }
             .background(Color.gray0)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                ToolbarItem(placement: .navigationBarLeading) {
-                    Button {
-                        dismiss()
-                    } label: {
-                        AppIcon.back
-                            .resizable()
-                            .scaledToFit()
-                            .frame(width: 24, height: 24)
-                            .foregroundStyle(Color.gray90)
-                    }
-                }
                 ToolbarItem(placement: .principal) {
-                    Text("액티비티 검색")
-                        .font(.Pretendard.body3)
-                        .fontWeight(.semibold)
-                        .foregroundStyle(Color.gray90)
+                    Text("EXCITING")
+                        .font(.Paperlogy.caption1)
+                        .fontWeight(.bold)
+                        .foregroundStyle(Color.blackSeafoam)
+                }
+            }
+            .sheet(isPresented: Binding(
+                get: { viewModel.state.webViewURL != nil },
+                set: { if !$0 { viewModel.send(.webViewDismissed) } }
+            )) {
+                if let url = viewModel.state.webViewURL {
+                    BannerWebViewController(url: url)
                 }
             }
         }
-        .onAppear {
-            isFocused = true
+        .task {
+            viewModel.send(.onAppear)
         }
     }
 }
@@ -54,6 +56,34 @@ struct ActivitySearchView: View {
 // MARK: - Sections
 
 private extension ActivitySearchView {
+
+    var heroHeader: some View {
+        Group {
+            if viewModel.state.banners.isEmpty {
+                Rectangle()
+                    .fill(
+                        LinearGradient(
+                            colors: [Color.blackSeafoam, Color.deepSeafoam],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        )
+                    )
+                    .aspectRatio(2, contentMode: .fit)
+            } else {
+                TabView {
+                    ForEach(viewModel.state.banners.indices, id: \.self) { index in
+                        KFImage(viewModel.state.banners[index].imageUrl.serverImageURL)
+                            .requestModifier(AuthImageModifier())
+                            .resizable()
+                            .scaledToFit()
+                            .onTapGesture { viewModel.send(.bannerTapped(viewModel.state.banners[index])) }
+                    }
+                }
+                .tabViewStyle(.page(indexDisplayMode: viewModel.state.banners.count > 1 ? .automatic : .never))
+                .aspectRatio(4, contentMode: .fit)
+            }
+        }
+    }
 
     var searchBar: some View {
         HStack(spacing: 8) {
@@ -99,15 +129,13 @@ private extension ActivitySearchView {
     }
 
     var loadingView: some View {
-        ScrollView {
-            VStack(spacing: 16) {
-                ForEach(0..<4, id: \.self) { _ in
-                    placeholderCard
-                }
+        VStack(spacing: 16) {
+            ForEach(0..<4, id: \.self) { _ in
+                placeholderCard
             }
-            .padding(.horizontal, 16)
-            .padding(.top, 16)
         }
+        .padding(.horizontal, 16)
+        .padding(.top, 16)
     }
 
     var emptyPromptView: some View {
@@ -120,7 +148,8 @@ private extension ActivitySearchView {
                 .foregroundStyle(Color.gray45)
                 .multilineTextAlignment(.center)
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 60)
     }
 
     var noResultView: some View {
@@ -133,36 +162,35 @@ private extension ActivitySearchView {
                 .foregroundStyle(Color.gray45)
                 .multilineTextAlignment(.center)
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 60)
     }
 
     var resultList: some View {
-        ScrollView {
-            VStack(spacing: 0) {
-                Text("검색 결과 \(viewModel.state.results.count)건")
-                    .font(.Pretendard.caption1)
-                    .foregroundStyle(Color.gray45)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(.horizontal, 16)
-                    .padding(.vertical, 12)
-
-                VStack(spacing: 12) {
-                    ForEach(viewModel.state.results, id: \.activityId) { activity in
-                        let override = viewModel.state.keepOverrides[activity.activityId]
-                        let displayed = override.map {
-                            ActivitySummaryDTO(activity, isKeep: $0.isKeep, keepCount: $0.keepCount)
-                        } ?? activity
-                        NavigationLink(destination: DetailView(activity: displayed)) {
-                            ActivityCard(activity: displayed, onKeepTapped: {
-                                viewModel.send(.keepToggled(activityId: activity.activityId))
-                            })
-                        }
-                        .buttonStyle(.plain)
-                    }
-                }
+        VStack(spacing: 0) {
+            Text("검색 결과 \(viewModel.state.results.count)건")
+                .font(.Pretendard.caption1)
+                .foregroundStyle(Color.gray45)
+                .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(.horizontal, 16)
-                .padding(.bottom, 20)
+                .padding(.vertical, 12)
+
+            VStack(spacing: 12) {
+                ForEach(viewModel.state.results, id: \.activityId) { activity in
+                    let override = viewModel.state.keepOverrides[activity.activityId]
+                    let displayed = override.map {
+                        ActivitySummaryDTO(activity, isKeep: $0.isKeep, keepCount: $0.keepCount)
+                    } ?? activity
+                    NavigationLink(destination: DetailView(activity: displayed)) {
+                        ActivityCard(activity: displayed, onKeepTapped: {
+                            viewModel.send(.keepToggled(activityId: activity.activityId))
+                        })
+                    }
+                    .buttonStyle(.plain)
+                }
             }
+            .padding(.horizontal, 16)
+            .padding(.bottom, 20)
         }
     }
 
@@ -184,3 +212,11 @@ private extension ActivitySearchView {
         .overlay(RoundedRectangle(cornerRadius: 12).stroke(Color.gray15, lineWidth: 1))
     }
 }
+
+// MARK: - Previews
+
+#if DEBUG
+#Preview("액티비티 검색 — 정상") {
+    ActivitySearchView()
+}
+#endif
