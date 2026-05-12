@@ -20,100 +20,100 @@ struct HomeView: View {
     @State private var relatedActivityCountry: String? = nil
     @State private var relatedActivityCategory: String? = nil
     @State private var homeScrollOffset: CGFloat = 0
+    @State private var featuredHeaderOffset: CGFloat = .infinity
+    @State private var postsHeaderOffset: CGFloat = .infinity
+    @State private var showCreatePost = false
+    @State private var editingPost: PostDTO? = nil
+    @State private var postToDelete: PostDTO? = nil
 
     private let categories = ["전체", "투어", "관광", "패키지", "익사이팅", "체험"]
     private let availableFlags: [AppFlag] = [.korea, .japan, .australia, .philippines, .thailand]
 
     var body: some View {
         NavigationStack {
-            ZStack {
-                ScrollView {
-                    VStack(spacing: 0) {
-                        scrollOffsetReader
+            VStack(spacing: 0) {
+                customHeader
 
-                        flagSection
-                            .padding(.top, 12)
+                ZStack {
+                    ScrollView {
+                        VStack(spacing: 0) {
+                            scrollOffsetReader
 
-                        categoryTabs
-                            .padding(.top, 12)
+                            flagSection
+                                .padding(.top, 12)
 
-                        featuredSection
-                            .padding(.top, 20)
+                            categoryTabs
+                                .padding(.top, 12)
 
-                        postsSection
-                            .padding(.top, 20)
-                    }
-                    .padding(.bottom, 88)
-                }
-                .background(Color.gray0)
-                .coordinateSpace(name: "homeScroll")
+                            featuredOffsetReader
+                            featuredSectionHeader
+                                .padding(.top, 20)
 
-                if let post = selectedPost {
-                    PostDetailOverlayView(
-                        post: post,
-                        onDismiss: { selectedPost = nil },
-                        onUserSelected: { user in
-                            selectedCreator = user
-                        },
-                        onRelatedActivitiesTapped: { country, category in
-                            relatedActivityCountry = country
-                            relatedActivityCategory = category
-                            showMoreActivities = true
-                        },
-                        onCommentCreated: {
-                            viewModel.incrementCommentCount(for: post.postId)
-                        },
-                        onCommentDeleted: {
-                            viewModel.decrementCommentCount(for: post.postId)
+                            featuredSection
+                                .padding(.top, 12)
+
+                            postsOffsetReader
+                            postsSectionHeader
+                                .padding(.top, 20)
+
+                            postsSection
                         }
-                    )
-                    .transition(.opacity.animation(.easeInOut(duration: 0.2)))
-                    .zIndex(1)
-                }
+                        .padding(.bottom, 88)
+                    }
+                    .background(Color.gray0)
+                    .coordinateSpace(name: "homeScroll")
 
-                if shouldShowCreatePostButton {
+                    if let post = selectedPost {
+                        PostDetailOverlayView(
+                            post: post,
+                            onDismiss: { selectedPost = nil },
+                            onUserSelected: { user in
+                                selectedCreator = user
+                            },
+                            onRelatedActivitiesTapped: { country, category in
+                                relatedActivityCountry = country
+                                relatedActivityCategory = category
+                                showMoreActivities = true
+                            },
+                            onCommentCreated: {
+                                viewModel.incrementCommentCount(for: post.postId)
+                            },
+                            onCommentDeleted: {
+                                viewModel.decrementCommentCount(for: post.postId)
+                            }
+                        )
+                        .transition(.opacity.animation(.easeInOut(duration: 0.2)))
+                        .zIndex(1)
+                    }
+
                     VStack {
                         Spacer()
-                        createPostButton
+                        Button {
+                            showCreatePost = true
+                        } label: {
+                            createPostButton
+                        }
+                        .buttonStyle(.plain)
+                        .scaleEffect(
+                            x: shouldShowCreatePostButton ? 1 : 0.01,
+                            y: 1,
+                            anchor: .center
+                        )
+                        .opacity(shouldShowCreatePostButton ? 1 : 0)
                     }
                     .padding(.horizontal, 16)
                     .padding(.bottom, 12)
-                    .transition(.move(edge: .bottom).combined(with: .opacity))
                     .zIndex(0.5)
-                    .allowsHitTesting(false)
+                    .allowsHitTesting(shouldShowCreatePostButton)
+                }
+                .animation(.spring(response: 0.35, dampingFraction: 0.86), value: shouldShowCreatePostButton)
+                .onPreferenceChange(ScrollOffsetsKey.self) { offsets in
+                    if let s = offsets.scroll { homeScrollOffset = s }
+                    if let f = offsets.featured { featuredHeaderOffset = f }
+                    if let p = offsets.posts { postsHeaderOffset = p }
                 }
             }
-            .animation(.spring(response: 0.35, dampingFraction: 0.86), value: shouldShowCreatePostButton)
-            .onPreferenceChange(HomeScrollOffsetKey.self) { homeScrollOffset = $0 }
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .navigationBarLeading) {
-                    Text("SeSAC ACTIVITY")
-                        .font(.Paperlogy.caption1)
-                        .fontWeight(.bold)
-                        .foregroundStyle(Color.blackSeafoam)
-                }
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    HStack(spacing: 16) {
-                        Button {
-                        } label: {
-                            AppIcon.notification
-                                .resizable()
-                                .scaledToFit()
-                                .frame(width: 22, height: 22)
-                                .foregroundStyle(Color.gray90)
-                        }
-                        Button {
-                        } label: {
-                            AppIcon.search
-                                .resizable()
-                                .scaledToFit()
-                                .frame(width: 22, height: 22)
-                                .foregroundStyle(Color.gray90)
-                        }
-                    }
-                }
-            }
+            .toolbar(.hidden, for: .navigationBar)
             .navigationDestination(item: $selectedCreator) { creator in
                 UserProfileView(
                     user: creator,
@@ -133,6 +133,35 @@ struct HomeView: View {
                     contextCategory: relatedActivityCategory
                 )
             }
+            .sheet(isPresented: $showCreatePost, onDismiss: {
+                viewModel.send(.refreshPosts)
+            }) {
+                CreatePostView(
+                    latitude: viewModel.currentLatitude,
+                    longitude: viewModel.currentLongitude
+                )
+            }
+            .sheet(item: $editingPost, onDismiss: {
+                viewModel.send(.refreshPosts)
+            }) { post in
+                CreatePostView(
+                    post: post,
+                    latitude: viewModel.currentLatitude,
+                    longitude: viewModel.currentLongitude
+                )
+            }
+            .alert("게시글을 삭제할까요?", isPresented: Binding(
+                get: { postToDelete != nil },
+                set: { if !$0 { postToDelete = nil } }
+            )) {
+                Button("삭제", role: .destructive) {
+                    if let post = postToDelete {
+                        viewModel.send(.deletePost(post.postId))
+                        postToDelete = nil
+                    }
+                }
+                Button("취소", role: .cancel) { postToDelete = nil }
+            }
         }
         .task {
             viewModel.send(.start)
@@ -147,17 +176,46 @@ struct HomeView: View {
 
 private extension HomeView {
 
+    var customHeader: some View {
+        HStack {
+            Text(toolbarSectionTitle ?? "Throughway")
+                .font(.Pretendard.body1)
+                .fontWeight(.bold)
+                .foregroundStyle(Color.gray90)
+                .contentTransition(.numericText())
+                .animation(.easeInOut(duration: 0.25), value: toolbarSectionTitle)
+
+            Spacer()
+
+            Group {
+                switch toolbarSectionTitle {
+                case "NEW 액티비티":
+                    Button("View All") { showMoreActivities = true }
+                        .font(.Pretendard.caption1)
+                        .foregroundStyle(Color.blackSeafoam)
+                case "액티비티 포스트":
+                    sortOrderMenu
+                default:
+                    EmptyView()
+                }
+            }
+            .animation(.easeInOut(duration: 0.25), value: toolbarSectionTitle)
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 12)
+        .background(Color.gray0)
+    }
+
     var shouldShowCreatePostButton: Bool {
-        selectedPost == nil && homeScrollOffset < -24
+        selectedPost == nil && toolbarSectionTitle == "액티비티 포스트"
     }
 
     var scrollOffsetReader: some View {
         GeometryReader { proxy in
-            Color.clear
-                .preference(
-                    key: HomeScrollOffsetKey.self,
-                    value: proxy.frame(in: .named("homeScroll")).minY
-                )
+            Color.clear.preference(
+                key: ScrollOffsetsKey.self,
+                value: ScrollOffsetData(scroll: proxy.frame(in: .named("homeScroll")).minY)
+            )
         }
         .frame(height: 0)
     }
@@ -177,6 +235,82 @@ private extension HomeView {
         .background(Color.lightSeafoam)
         .clipShape(Capsule())
         .shadow(color: Color.black.opacity(0.12), radius: 14, x: 0, y: 6)
+    }
+
+    var sortOrderMenu: some View {
+        Menu {
+            Button {
+                viewModel.send(.sortChanged("createdAt"))
+            } label: {
+                Label("최신순", systemImage: viewModel.state.sortOrder == "createdAt" ? "checkmark" : "")
+            }
+            Button {
+                viewModel.send(.sortChanged("likes"))
+            } label: {
+                Label("좋아요순", systemImage: viewModel.state.sortOrder == "likes" ? "checkmark" : "")
+            }
+        } label: {
+            HStack(spacing: 4) {
+                Text(viewModel.state.sortOrder == "createdAt" ? "최신순" : "좋아요순")
+                    .font(.Pretendard.caption1)
+                    .foregroundStyle(Color.gray60)
+                Image(systemName: "line.3.horizontal")
+                    .font(.system(size: 12))
+                    .foregroundStyle(Color.gray60)
+            }
+        }
+    }
+
+    var toolbarSectionTitle: String? {
+        if postsHeaderOffset < 0 { return "액티비티 포스트" }
+        if featuredHeaderOffset < 0 { return "NEW 액티비티" }
+        return nil
+    }
+
+    var featuredOffsetReader: some View {
+        GeometryReader { proxy in
+            Color.clear.preference(
+                key: ScrollOffsetsKey.self,
+                value: ScrollOffsetData(featured: proxy.frame(in: .named("homeScroll")).minY)
+            )
+        }
+        .frame(height: 0)
+    }
+
+    var postsOffsetReader: some View {
+        GeometryReader { proxy in
+            Color.clear.preference(
+                key: ScrollOffsetsKey.self,
+                value: ScrollOffsetData(posts: proxy.frame(in: .named("homeScroll")).minY)
+            )
+        }
+        .frame(height: 0)
+    }
+
+    var featuredSectionHeader: some View {
+        HStack {
+            Text("NEW 액티비티")
+                .font(.Pretendard.body2)
+                .fontWeight(.semibold)
+                .foregroundStyle(Color.gray90)
+            Spacer()
+            Button("View All") { showMoreActivities = true }
+                .font(.Pretendard.caption1)
+                .foregroundStyle(Color.blackSeafoam)
+        }
+        .padding(.horizontal, 16)
+    }
+
+    var postsSectionHeader: some View {
+        HStack {
+            Text("액티비티 포스트")
+                .font(.Pretendard.body2)
+                .fontWeight(.semibold)
+                .foregroundStyle(Color.gray90)
+            Spacer()
+            sortOrderMenu
+        }
+        .padding(.horizontal, 16)
     }
 
     var flagSection: some View {
@@ -232,11 +366,7 @@ private extension HomeView {
     }
 
     var featuredSection: some View {
-        VStack(spacing: 12) {
-            sectionHeader(title: "NEW 액티비티", action: "View All") {
-                showMoreActivities = true
-            }
-
+        VStack(spacing: 0) {
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 12) {
                     if viewModel.state.isLoadingNewActivities && viewModel.state.newActivities.isEmpty {
@@ -371,27 +501,6 @@ private extension HomeView {
 
     var postsSection: some View {
         VStack(spacing: 0) {
-            // Header
-            HStack {
-                Text("액티비티 포스트")
-                    .font(.Pretendard.body2)
-                    .fontWeight(.semibold)
-                    .foregroundStyle(Color.gray90)
-                Spacer()
-                Button {
-                } label: {
-                    HStack(spacing: 4) {
-                        Text("최신순")
-                            .font(.Pretendard.caption1)
-                            .foregroundStyle(Color.gray60)
-                        Image(systemName: "line.3.horizontal")
-                            .font(.system(size: 12))
-                            .foregroundStyle(Color.gray60)
-                    }
-                }
-            }
-            .padding(.horizontal, 16)
-
             // Distance slider
             VStack(spacing: 8) {
                 HStack {
@@ -482,41 +591,55 @@ private extension HomeView {
 
         return VStack(alignment: .leading, spacing: 0) {
             // 1. 프로필 헤더
-            Button {
-                selectedCreator = post.creator.asUserInfo
-            } label: {
-                HStack(spacing: 10) {
-                    KFImage(post.creator.profileImage.flatMap { $0.serverImageURL })
-                        .requestModifier(AuthImageModifier())
-                        .placeholder {
-                            Circle()
-                                .fill(Color.gray15)
-                                .overlay(Image(systemName: "person.fill").foregroundStyle(Color.gray45))
+            HStack(spacing: 0) {
+                Button {
+                    selectedCreator = post.creator.asUserInfo
+                } label: {
+                    HStack(spacing: 10) {
+                        KFImage(post.creator.profileImage.flatMap { $0.serverImageURL })
+                            .requestModifier(AuthImageModifier())
+                            .placeholder {
+                                Circle()
+                                    .fill(Color.gray15)
+                                    .overlay(Image(systemName: "person.fill").foregroundStyle(Color.gray45))
+                            }
+                            .resizable()
+                            .scaledToFill()
+                            .frame(width: 36, height: 36)
+                            .clipShape(Circle())
+
+                        HStack(spacing: 6) {
+                            Text(post.creator.nick)
+                                .font(.Pretendard.body3)
+                                .fontWeight(.semibold)
+                                .foregroundStyle(Color.gray90)
+
+                            Text("·")
+                                .font(.Pretendard.caption2)
+                                .foregroundStyle(Color.gray30)
+
+                            Text(relativeTime(from: post.createdAt))
+                                .font(.Pretendard.caption2)
+                                .foregroundStyle(Color.gray45)
                         }
-                        .resizable()
-                        .scaledToFill()
-                        .frame(width: 36, height: 36)
-                        .clipShape(Circle())
 
-                    HStack(spacing: 6) {
-                        Text(post.creator.nick)
-                            .font(.Pretendard.body3)
-                            .fontWeight(.semibold)
-                            .foregroundStyle(Color.gray90)
-
-                        Text("·")
-                            .font(.Pretendard.caption2)
-                            .foregroundStyle(Color.gray30)
-
-                        Text(relativeTime(from: post.createdAt))
-                            .font(.Pretendard.caption2)
-                            .foregroundStyle(Color.gray45)
+                        Spacer()
                     }
+                }
+                .buttonStyle(.plain)
 
-                    Spacer()
+                if post.creator.userId == AppSession.userId {
+                    Menu {
+                        Button("수정") { editingPost = post }
+                        Button("삭제", role: .destructive) { postToDelete = post }
+                    } label: {
+                        Image(systemName: "ellipsis")
+                            .font(.system(size: 14))
+                            .foregroundStyle(Color.gray45)
+                            .frame(width: 32, height: 32)
+                    }
                 }
             }
-            .buttonStyle(.plain)
             .padding(.horizontal, 14)
             .padding(.top, 14)
             .padding(.bottom, 10)
@@ -537,35 +660,11 @@ private extension HomeView {
             .padding(.horizontal, 14)
             .padding(.bottom, 12)
 
-            // 3. 이미지/비디오 (1×n 가로 스크롤)
-            if !post.files.isEmpty {
-                ScrollView(.horizontal, showsIndicators: false) {
-                    HStack(spacing: 6) {
-                        ForEach(post.files.indices, id: \.self) { index in
-                            let file = post.files[index]
-                            if file.isVideoPath {
-                                MediaThumbnailView(path: file, height: 220, cornerRadius: 8)
-                                    .frame(width: post.files.count == 1 ? nil : 200)
-                                    .frame(maxWidth: post.files.count == 1 ? .infinity : nil)
-                            } else {
-                                KFImage(file.serverImageURL)
-                                    .requestModifier(AuthImageModifier())
-                                    .placeholder {
-                                        RoundedRectangle(cornerRadius: 8)
-                                            .fill(Color.gray15)
-                                            .overlay(Image(systemName: "photo").foregroundStyle(Color.gray30))
-                                    }
-                                    .resizable()
-                                    .scaledToFill()
-                                    .frame(width: post.files.count == 1 ? nil : 200, height: 220)
-                                    .frame(maxWidth: post.files.count == 1 ? .infinity : nil)
-                                    .clipShape(RoundedRectangle(cornerRadius: 8))
-                            }
-                        }
-                    }
+            // 3. 첫 번째 미디어만 표시 (나머지는 PostDetailOverlayView에서 확인)
+            if let firstFile = post.files.first {
+                MediaThumbnailView(path: firstFile, height: 220, cornerRadius: 8, allowsFullscreen: false)
                     .padding(.horizontal, 14)
-                }
-                .padding(.bottom, 12)
+                    .padding(.bottom, 12)
             }
 
             // 4. 카테고리 칩
@@ -713,10 +812,23 @@ private extension HomeView {
     }
 }
 
-private struct HomeScrollOffsetKey: PreferenceKey {
-    static var defaultValue: CGFloat = 0
+extension PostDTO: @retroactive Identifiable {
+    public var id: String { postId }
+}
 
-    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) {
-        value = nextValue()
+private struct ScrollOffsetData: Equatable {
+    var scroll: CGFloat?
+    var featured: CGFloat?
+    var posts: CGFloat?
+}
+
+private struct ScrollOffsetsKey: PreferenceKey {
+    static var defaultValue = ScrollOffsetData()
+
+    static func reduce(value: inout ScrollOffsetData, nextValue: () -> ScrollOffsetData) {
+        let next = nextValue()
+        if let s = next.scroll { value.scroll = s }
+        if let f = next.featured { value.featured = f }
+        if let p = next.posts { value.posts = p }
     }
 }
