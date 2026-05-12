@@ -27,15 +27,20 @@ enum ActivityFeature {
 enum ActivitySearchFeature {
     struct State: BaseState {
         var results: [ActivitySummaryDTO] = []
+        var banners: [BannerItemDTO] = []
         var isLoading: Bool = false
         var hasSearched: Bool = false
+        var webViewURL: URL?
         var keepOverrides: [String: (isKeep: Bool, keepCount: Int)] = [:]
     }
 
     enum Intent: BaseIntent {
+        case onAppear
         case searchSubmitted(String)
         case reset
         case keepToggled(activityId: String)
         case keepUpdated(activityId: String, isKeep: Bool, keepCount: Int)
+        case bannerTapped(BannerItemDTO)
+        case webViewDismissed
     }
 }
