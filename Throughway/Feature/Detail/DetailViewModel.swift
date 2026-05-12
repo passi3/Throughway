@@ -73,6 +73,10 @@ final class DetailViewModel: BaseViewModel<DetailFeature.State, DetailFeature.In
         !availableDates.isEmpty && state.selectedTime != nil
     }
 
+    var isPurchased: Bool {
+        InteractionCache.shared.isPurchased(summary.activityId)
+    }
+
     // MARK: - Intent Handling
 
     override func send(_ intent: DetailFeature.Intent) {
@@ -234,6 +238,7 @@ final class DetailViewModel: BaseViewModel<DetailFeature.State, DetailFeature.In
                 PaymentValidationRequestDTO(impUid: impUid)
             )
             print("[Validate] ✅ 성공 payment_id: \(receipt.paymentId)")
+            InteractionCache.shared.markPurchased(summary.activityId)
             reduce { $0.paymentPhase = .success }
         } catch {
             print("[Validate] ❌ 실패: \(error)")

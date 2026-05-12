@@ -16,7 +16,9 @@ final class PostDetailViewModel: BaseViewModel<PostDetailFeature.State, PostDeta
     private let onCommentDeleted: () -> Void
 
     var currentIsLike: Bool {
-        state.likeOverride?.isLike ?? state.post?.isLike ?? summary.isLike
+        state.likeOverride?.isLike
+            ?? state.post?.isLike
+            ?? (InteractionCache.shared.isLiked(summary.postId) || summary.isLike)
     }
 
     var currentLikeCount: Int {
@@ -78,6 +80,7 @@ final class PostDetailViewModel: BaseViewModel<PostDetailFeature.State, PostDeta
         reduce { $0.isLoadingPost = true }
         do {
             let post = try await postClient.fetchDetail(summary.postId)
+            InteractionCache.shared.setLiked(summary.postId, isLiked: post.isLike)
             reduce {
                 $0.post = post
                 $0.comments = post.comments
@@ -98,6 +101,7 @@ final class PostDetailViewModel: BaseViewModel<PostDetailFeature.State, PostDeta
 
         do {
             let response = try await postClient.toggleLike(summary.postId, newIsLike)
+            InteractionCache.shared.setLiked(summary.postId, isLiked: response.isLiked)
             reduce { $0.likeOverride = (isLike: response.isLiked, likeCount: newCount) }
         } catch {
             print("[PostDetail] toggleLike failed: \(error.localizedDescription)")
