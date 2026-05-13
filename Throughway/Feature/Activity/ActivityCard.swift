@@ -20,9 +20,9 @@ struct ActivityCard: View {
             VStack(alignment: .leading, spacing: 6) {
                 HStack {
                     Text(activity.title)
-                        .font(.Pretendard.body3)
+                        .font(.Pretendard.body4)
                         .fontWeight(.semibold)
-                        .foregroundStyle(Color.gray90)
+                        .foregroundStyle(Color.textPrimary)
                         .lineLimit(1)
 
                     Spacer()
@@ -32,7 +32,7 @@ struct ActivityCard: View {
                     } label: {
                         Image(systemName: activity.isKeep ? "heart.fill" : "heart")
                             .font(.system(size: 16))
-                            .foregroundStyle(Color.rosyPunch)
+                            .foregroundStyle(Color.error)
                     }
                     .buttonStyle(.borderless)
                 }
@@ -40,29 +40,29 @@ struct ActivityCard: View {
                 HStack(spacing: 4) {
                     Image(systemName: "heart.fill")
                         .font(.system(size: 10))
-                        .foregroundStyle(Color.rosyPunch)
+                        .foregroundStyle(Color.error)
                     Text("\(activity.keepCount)개")
-                        .font(.Pretendard.caption2)
-                        .foregroundStyle(Color.gray45)
+                        .font(.Pretendard.caption3)
+                        .foregroundStyle(Color.textTertiary)
                 }
 
                 Text(activity.country)
-                    .font(.Pretendard.caption2)
-                    .foregroundStyle(Color.gray60)
+                    .font(.Pretendard.caption3)
+                    .foregroundStyle(Color.textSecondary)
                     .lineLimit(1)
 
                 Text(activity.price.final.wonFormatted)
-                    .font(.Pretendard.caption1)
+                    .font(.Pretendard.caption2)
                     .fontWeight(.semibold)
-                    .foregroundStyle(Color.blackSeafoam)
+                    .foregroundStyle(Color.primary)
             }
         }
         .padding(12)
-        .background(Color.gray0)
+        .background(Color.bgPrimary)
         .clipShape(RoundedRectangle(cornerRadius: 12))
         .overlay(
             RoundedRectangle(cornerRadius: 12)
-                .stroke(Color.gray15, lineWidth: 1)
+                .stroke(Color.border, lineWidth: 1)
         )
     }
 
@@ -72,18 +72,11 @@ struct ActivityCard: View {
             MediaThumbnailView(path: thumbnail, height: 100, cornerRadius: 10)
         } else {
             RoundedRectangle(cornerRadius: 10)
-                .fill(Color.gray15)
+                .fill(Color.bgTertiary)
                 .overlay(
                     Image(systemName: "photo")
-                        .foregroundStyle(Color.gray30)
+                        .foregroundStyle(Color.textTertiary)
                 )
         }
     }
 }
-
-#if DEBUG
-#Preview("ActivityCard") {
-    ActivityCard(activity: .preview)
-        .padding()
-}
-#endif

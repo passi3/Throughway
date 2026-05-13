@@ -32,14 +32,14 @@ struct ChatListView: View {
             }
             .navigationTitle("채팅")
             .navigationBarTitleDisplayMode(.large)
-            .background(Color.gray0)
+            .background(Color.bgPrimary)
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button {
                         isSearchPresented = true
                     } label: {
                         Image(systemName: "magnifyingglass")
-                            .foregroundStyle(Color.gray90)
+                            .foregroundStyle(Color.textPrimary)
                     }
                 }
             }
@@ -108,8 +108,8 @@ struct ChatListView: View {
                     localLastMessage: viewModel.state.roomLastMessages[room.roomId]
                 )
             }
-            .listRowBackground(Color.gray0)
-            .listRowSeparatorTint(Color.gray15)
+            .listRowBackground(Color.bgPrimary)
+            .listRowSeparatorTint(Color.border)
             .swipeActions(edge: .trailing, allowsFullSwipe: false) {
                 Button(role: .destructive) {
                     roomToDelete = room
@@ -126,10 +126,10 @@ struct ChatListView: View {
         VStack(spacing: 12) {
             Image(systemName: "bubble.left.and.bubble.right")
                 .font(.system(size: 48))
-                .foregroundStyle(Color.gray45)
+                .foregroundStyle(Color.textTertiary)
             Text("채팅방이 없습니다")
                 .font(.Pretendard.body1)
-                .foregroundStyle(Color.gray45)
+                .foregroundStyle(Color.textTertiary)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
@@ -165,16 +165,16 @@ private struct ChatRoomRowView: View {
                 Text(opponent?.nick ?? "알 수 없음")
                     .font(.Pretendard.body1)
                     .fontWeight(.semibold)
-                    .foregroundStyle(Color.gray90)
+                    .foregroundStyle(Color.textPrimary)
                 Text(lastContent)
-                    .font(.Pretendard.caption1)
-                    .foregroundStyle(Color.gray45)
+                    .font(.Pretendard.caption2)
+                    .foregroundStyle(Color.textTertiary)
                     .lineLimit(1)
             }
             Spacer()
             Text(lastTime)
-                .font(.Pretendard.caption2)
-                .foregroundStyle(Color.gray45)
+                .font(.Pretendard.caption3)
+                .foregroundStyle(Color.textTertiary)
         }
         .padding(.vertical, 8)
         .contentShape(Rectangle())
@@ -191,7 +191,7 @@ private struct ChatRoomRowView: View {
             } else {
                 Image(systemName: "person.circle.fill")
                     .resizable()
-                    .foregroundStyle(Color.gray30)
+                    .foregroundStyle(Color.textTertiary)
             }
         }
         .frame(width: 44, height: 44)

@@ -17,25 +17,25 @@ struct ActivitySearchView: View {
         NavigationStack {
             ScrollView {
                 VStack(spacing: 0) {
-                    heroHeader
-
                     searchBar
+                    
+                    heroHeader
                         .padding(.top, 12)
 
                     Divider()
-                        .background(Color.gray15)
+                        .background(Color.border)
 
                     searchContent
                 }
             }
-            .background(Color.gray0)
+            .background(Color.bgPrimary)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .principal) {
                     Text("EXCITING")
                         .font(.Paperlogy.caption1)
                         .fontWeight(.bold)
-                        .foregroundStyle(Color.blackSeafoam)
+                        .foregroundStyle(Color.primary)
                 }
             }
             .sheet(isPresented: Binding(
@@ -63,7 +63,7 @@ private extension ActivitySearchView {
                 Rectangle()
                     .fill(
                         LinearGradient(
-                            colors: [Color.blackSeafoam, Color.deepSeafoam],
+                            colors: [Color.primary, Color.primary],
                             startPoint: .topLeading,
                             endPoint: .bottomTrailing
                         )
@@ -89,11 +89,11 @@ private extension ActivitySearchView {
         HStack(spacing: 8) {
             Image(systemName: "magnifyingglass")
                 .font(.system(size: 16))
-                .foregroundStyle(Color.gray45)
+                .foregroundStyle(Color.textTertiary)
 
             TextField("2자 이상 입력 후 검색", text: $keyword)
-                .font(.Pretendard.body3)
-                .foregroundStyle(Color.gray90)
+                .font(.Pretendard.body4)
+                .foregroundStyle(Color.textPrimary)
                 .focused($isFocused)
                 .submitLabel(.search)
                 .onSubmit {
@@ -106,13 +106,13 @@ private extension ActivitySearchView {
                 } label: {
                     Image(systemName: "xmark.circle.fill")
                         .font(.system(size: 16))
-                        .foregroundStyle(Color.gray30)
+                        .foregroundStyle(Color.textTertiary)
                 }
             }
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 12)
-        .background(Color.gray0)
+        .background(Color.bgPrimary)
     }
 
     @ViewBuilder
@@ -142,10 +142,10 @@ private extension ActivitySearchView {
         VStack(spacing: 12) {
             Image(systemName: "magnifyingglass")
                 .font(.system(size: 40))
-                .foregroundStyle(Color.gray30)
+                .foregroundStyle(Color.textTertiary)
             Text("검색어를 2자 이상 입력하고\nEnter를 눌러 검색하세요")
-                .font(.Pretendard.body3)
-                .foregroundStyle(Color.gray45)
+                .font(.Pretendard.body4)
+                .foregroundStyle(Color.textTertiary)
                 .multilineTextAlignment(.center)
         }
         .frame(maxWidth: .infinity)
@@ -156,10 +156,10 @@ private extension ActivitySearchView {
         VStack(spacing: 12) {
             Image(systemName: "doc.text.magnifyingglass")
                 .font(.system(size: 40))
-                .foregroundStyle(Color.gray30)
+                .foregroundStyle(Color.textTertiary)
             Text("'\(keyword)'에 대한 검색 결과가 없습니다")
-                .font(.Pretendard.body3)
-                .foregroundStyle(Color.gray45)
+                .font(.Pretendard.body4)
+                .foregroundStyle(Color.textTertiary)
                 .multilineTextAlignment(.center)
         }
         .frame(maxWidth: .infinity)
@@ -169,8 +169,8 @@ private extension ActivitySearchView {
     var resultList: some View {
         VStack(spacing: 0) {
             Text("검색 결과 \(viewModel.state.results.count)건")
-                .font(.Pretendard.caption1)
-                .foregroundStyle(Color.gray45)
+                .font(.Pretendard.caption2)
+                .foregroundStyle(Color.textTertiary)
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(.horizontal, 16)
                 .padding(.vertical, 12)
@@ -197,19 +197,19 @@ private extension ActivitySearchView {
     var placeholderCard: some View {
         HStack(spacing: 12) {
             RoundedRectangle(cornerRadius: 10)
-                .fill(Color.gray15)
+                .fill(Color.bgTertiary)
                 .frame(width: 100, height: 100)
             VStack(alignment: .leading, spacing: 8) {
-                RoundedRectangle(cornerRadius: 4).fill(Color.gray15).frame(width: 160, height: 14)
-                RoundedRectangle(cornerRadius: 4).fill(Color.gray15).frame(width: 80, height: 12)
-                RoundedRectangle(cornerRadius: 4).fill(Color.gray15).frame(width: 120, height: 12)
+                RoundedRectangle(cornerRadius: 4).fill(Color.bgTertiary).frame(width: 160, height: 14)
+                RoundedRectangle(cornerRadius: 4).fill(Color.bgTertiary).frame(width: 80, height: 12)
+                RoundedRectangle(cornerRadius: 4).fill(Color.bgTertiary).frame(width: 120, height: 12)
             }
             Spacer()
         }
         .padding(12)
-        .background(Color.gray0)
+        .background(Color.bgPrimary)
         .clipShape(RoundedRectangle(cornerRadius: 12))
-        .overlay(RoundedRectangle(cornerRadius: 12).stroke(Color.gray15, lineWidth: 1))
+        .overlay(RoundedRectangle(cornerRadius: 12).stroke(Color.border, lineWidth: 1))
     }
 }
 

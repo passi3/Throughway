@@ -45,7 +45,7 @@ struct ChatDetailView: View {
         }
         .navigationTitle(opponentName)
         .navigationBarTitleDisplayMode(.inline)
-        .background(Color.gray0)
+        .background(Color.bgPrimary)
         .task { viewModel.send(.onAppear) }
         .onDisappear { viewModel.send(.onDisappear) }
         .fileImporter(
@@ -236,7 +236,7 @@ struct ChatDetailView: View {
                 } label: {
                     Image(systemName: showAttachmentMenu ? "xmark" : "plus")
                         .font(.system(size: 20))
-                        .foregroundStyle(Color.gray60)
+                        .foregroundStyle(Color.textSecondary)
                 }
                 .disabled(viewModel.state.pendingFiles.count >= 5)
 
@@ -248,10 +248,10 @@ struct ChatDetailView: View {
                 .submitLabel(.send)
                 .onSubmit { viewModel.send(.sendTapped) }
                 .focused($isTextFieldFocused)
-                .font(.Pretendard.body2)
+                .font(.Pretendard.body3)
                 .padding(.horizontal, 12)
                 .padding(.vertical, 8)
-                .background(Color.gray15)
+                .background(Color.bgTertiary)
                 .clipShape(RoundedRectangle(cornerRadius: 20))
 
                 let hasText = !viewModel.state.inputText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
@@ -260,14 +260,14 @@ struct ChatDetailView: View {
                 } label: {
                     Image(systemName: "paperplane.fill")
                         .font(.system(size: 20))
-                        .foregroundStyle(hasText ? Color.blackSeafoam : Color.gray30)
+                        .foregroundStyle(hasText ? Color.primary : Color.textTertiary)
                 }
                 .disabled(!hasText)
             }
             .padding(.horizontal, 16)
             .padding(.vertical, 12)
         }
-        .background(Color.gray0)
+        .background(Color.bgPrimary)
         .overlay(alignment: .top) {
             Divider()
         }
@@ -276,16 +276,16 @@ struct ChatDetailView: View {
     private func attachmentMenuButton(icon: String, label: String) -> some View {
         VStack(spacing: 6) {
             Circle()
-                .fill(Color.gray15)
+                .fill(Color.bgTertiary)
                 .frame(width: 52, height: 52)
                 .overlay {
                     Image(systemName: icon)
                         .font(.system(size: 22))
-                        .foregroundStyle(Color.gray60)
+                        .foregroundStyle(Color.textSecondary)
                 }
             Text(label)
-                .font(.Pretendard.caption2)
-                .foregroundStyle(Color.gray60)
+                .font(.Pretendard.caption3)
+                .foregroundStyle(Color.textSecondary)
         }
     }
 
@@ -336,12 +336,12 @@ private struct UpdatedProfileBanner: View {
 
             VStack(alignment: .leading, spacing: 2) {
                 Text("업데이트 프로필")
-                    .font(.Pretendard.caption2)
-                    .foregroundStyle(Color.gray45)
+                    .font(.Pretendard.caption3)
+                    .foregroundStyle(Color.textTertiary)
                 Text(profile.nick)
-                    .font(.Pretendard.body2)
+                    .font(.Pretendard.body3)
                     .fontWeight(.semibold)
-                    .foregroundStyle(Color.gray90)
+                    .foregroundStyle(Color.textPrimary)
             }
 
             Spacer()
@@ -349,13 +349,13 @@ private struct UpdatedProfileBanner: View {
             Button(action: onDismiss) {
                 Image(systemName: "xmark")
                     .font(.system(size: 12, weight: .medium))
-                    .foregroundStyle(Color.gray45)
+                    .foregroundStyle(Color.textTertiary)
                     .padding(6)
             }
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 10)
-        .background(Color.gray15)
+        .background(Color.bgTertiary)
         .overlay(alignment: .bottom) { Divider() }
     }
 
@@ -370,7 +370,7 @@ private struct UpdatedProfileBanner: View {
             } else {
                 Image(systemName: "person.circle.fill")
                     .resizable()
-                    .foregroundStyle(Color.gray30)
+                    .foregroundStyle(Color.textTertiary)
             }
         }
         .frame(width: 40, height: 40)
@@ -397,15 +397,15 @@ private struct DateDividerView: View {
         HStack(spacing: 8) {
             Rectangle()
                 .frame(height: 1)
-                .foregroundStyle(Color.gray15)
+                .foregroundStyle(Color.border)
             Text(label)
-                .font(.Pretendard.caption2)
-                .foregroundStyle(Color.gray45)
+                .font(.Pretendard.caption3)
+                .foregroundStyle(Color.textTertiary)
                 .lineLimit(1)
                 .fixedSize()
             Rectangle()
                 .frame(height: 1)
-                .foregroundStyle(Color.gray15)
+                .foregroundStyle(Color.border)
         }
         .padding(.vertical, 10)
     }
@@ -436,8 +436,8 @@ private struct MessageBubbleView: View {
                 VStack(alignment: .leading, spacing: 2) {
                     if showProfile {
                         Text(message.sender.nick)
-                            .font(.Pretendard.caption1)
-                            .foregroundStyle(Color.gray60)
+                            .font(.Pretendard.caption2)
+                            .foregroundStyle(Color.textSecondary)
                             .padding(.bottom, 2)
                     }
                     HStack(alignment: .bottom, spacing: 4) {
@@ -466,24 +466,24 @@ private struct MessageBubbleView: View {
 
             if !message.content.isEmpty {
                 Text(displayContent)
-                    .font(.Pretendard.body2)
-                    .foregroundStyle(isOwn ? .white : Color.gray90)
+                    .font(.Pretendard.body3)
+                    .foregroundStyle(isOwn ? .white : Color.textPrimary)
 
                 if isLong {
                     Button {
                         isExpanded.toggle()
                     } label: {
                         Text(isExpanded ? "접기" : "더보기")
-                            .font(.Pretendard.caption1)
+                            .font(.Pretendard.caption2)
                             .fontWeight(.semibold)
-                            .foregroundStyle(isOwn ? Color.white.opacity(0.75) : Color.blackSeafoam)
+                            .foregroundStyle(isOwn ? Color.white.opacity(0.75) : Color.primary)
                     }
                 }
             }
         }
         .padding(.horizontal, 12)
         .padding(.vertical, 8)
-        .background(isOwn ? Color.blackSeafoam : Color.gray15)
+        .background(isOwn ? Color.primary : Color.border)
         .clipShape(RoundedRectangle(cornerRadius: 16))
     }
 
@@ -543,13 +543,13 @@ private struct MessageBubbleView: View {
                         }
                         VStack(alignment: .leading, spacing: 2) {
                             Text(fileName)
-                                .font(.Pretendard.caption1)
+                                .font(.Pretendard.caption2)
                                 .fontWeight(.medium)
-                                .foregroundStyle(isOwn ? .white : Color.gray90)
+                                .foregroundStyle(isOwn ? .white : Color.textPrimary)
                                 .lineLimit(2)
                             Text("PDF")
-                                .font(.Pretendard.caption2)
-                                .foregroundStyle(isOwn ? .white.opacity(0.6) : Color.gray45)
+                                .font(.Pretendard.caption3)
+                                .foregroundStyle(isOwn ? .white.opacity(0.6) : Color.textTertiary)
                         }
                         Spacer()
                     }
@@ -561,17 +561,17 @@ private struct MessageBubbleView: View {
 
                     HStack {
                         Text(message.sender.nick)
-                            .font(.Pretendard.caption2)
-                            .foregroundStyle(isOwn ? .white.opacity(0.8) : Color.gray60)
+                            .font(.Pretendard.caption3)
+                            .foregroundStyle(isOwn ? .white.opacity(0.8) : Color.textSecondary)
                         Spacer()
                         Text(message.createdAt.attachmentDateLabel)
-                            .font(.Pretendard.caption2)
-                            .foregroundStyle(isOwn ? .white.opacity(0.6) : Color.gray45)
+                            .font(.Pretendard.caption3)
+                            .foregroundStyle(isOwn ? .white.opacity(0.6) : Color.textTertiary)
                     }
                     .padding(.horizontal, 12)
                     .padding(.vertical, 6)
                 }
-                .background(isOwn ? Color.white.opacity(0.15) : Color.gray15)
+                .background(isOwn ? Color.white.opacity(0.15) : Color.border)
                 .clipShape(RoundedRectangle(cornerRadius: 10))
                 .onTapGesture { onPDFTapped?(path, message) }
             }
@@ -582,8 +582,8 @@ private struct MessageBubbleView: View {
         Group {
             if showTime {
                 Text(message.createdAt.messageTimeLabel)
-                    .font(.Pretendard.caption2)
-                    .foregroundStyle(Color.gray45)
+                    .font(.Pretendard.caption3)
+                    .foregroundStyle(Color.textTertiary)
             } else {
                 Color.clear.frame(width: 0, height: 0)
             }
@@ -603,7 +603,7 @@ private struct MessageBubbleView: View {
                     } else {
                         Image(systemName: "person.circle.fill")
                             .resizable()
-                            .foregroundStyle(Color.gray30)
+                            .foregroundStyle(Color.textTertiary)
                     }
                 }
                 .frame(width: 32, height: 32)
@@ -633,23 +633,23 @@ private struct PendingFileChip: View {
                 VStack(spacing: 4) {
                     Image(systemName: "doc.fill")
                         .font(.system(size: 24))
-                        .foregroundStyle(Color.gray60)
+                        .foregroundStyle(Color.textSecondary)
                     Text(file.fileName)
-                        .font(.Pretendard.caption2)
-                        .foregroundStyle(Color.gray60)
+                        .font(.Pretendard.caption3)
+                        .foregroundStyle(Color.textSecondary)
                         .lineLimit(2)
                         .multilineTextAlignment(.center)
                 }
                 .frame(width: 64, height: 64)
-                .background(Color.gray15)
+                .background(Color.bgTertiary)
                 .clipShape(RoundedRectangle(cornerRadius: 8))
             }
 
             Button(action: onRemove) {
                 Image(systemName: "xmark.circle.fill")
                     .font(.system(size: 16))
-                    .foregroundStyle(Color.gray90)
-                    .background(Color.gray0, in: Circle())
+                    .foregroundStyle(Color.textPrimary)
+                    .background(Color.bgPrimary, in: Circle())
             }
             .offset(x: 6, y: -6)
         }
@@ -672,7 +672,7 @@ private struct PendingMessageBubbleView: View {
                     Button { onRetry(pending.id) } label: {
                         Image(systemName: "arrow.clockwise")
                             .font(.system(size: 14, weight: .medium))
-                            .foregroundStyle(Color.gray60)
+                            .foregroundStyle(Color.textSecondary)
                     }
                     Button { onDelete(pending.id) } label: {
                         Image(systemName: "trash")
@@ -691,13 +691,13 @@ private struct PendingMessageBubbleView: View {
                 }
                 if !pending.content.isEmpty {
                     Text(pending.content)
-                        .font(.Pretendard.body2)
+                        .font(.Pretendard.body3)
                         .foregroundStyle(.white)
                 }
             }
             .padding(.horizontal, 12)
             .padding(.vertical, 8)
-            .background(pending.isFailed ? Color.gray45 : Color.blackSeafoam)
+            .background(pending.isFailed ? Color.textTertiary : Color.primary)
             .clipShape(RoundedRectangle(cornerRadius: 16))
             .opacity(pending.isFailed ? 0.6 : 1)
         }
@@ -728,7 +728,7 @@ private struct PendingMessageBubbleView: View {
                     Image(systemName: "doc.fill")
                         .foregroundStyle(.white)
                     Text(file.fileName)
-                        .font(.Pretendard.caption1)
+                        .font(.Pretendard.caption2)
                         .foregroundStyle(.white)
                         .lineLimit(1)
                 }
@@ -797,11 +797,11 @@ private struct PDFPreviewView: View {
 
                     VStack(alignment: .trailing, spacing: 3) {
                         Text(item.senderNick)
-                            .font(.Pretendard.caption1)
+                            .font(.Pretendard.caption2)
                             .fontWeight(.semibold)
                             .foregroundStyle(.white)
                         Text(item.createdAt.dayLabel)
-                            .font(.Pretendard.caption2)
+                            .font(.Pretendard.caption3)
                             .foregroundStyle(.white.opacity(0.7))
                     }
                 }
@@ -870,11 +870,11 @@ private struct ImageViewerView: View {
                     if !items.isEmpty {
                         VStack(alignment: .trailing, spacing: 3) {
                             Text(items[currentIndex].senderNick)
-                                .font(.Pretendard.caption1)
+                                .font(.Pretendard.caption2)
                                 .fontWeight(.semibold)
                                 .foregroundStyle(.white)
                             Text(items[currentIndex].createdAt.dayLabel)
-                                .font(.Pretendard.caption2)
+                                .font(.Pretendard.caption3)
                                 .foregroundStyle(.white.opacity(0.7))
                         }
                     }

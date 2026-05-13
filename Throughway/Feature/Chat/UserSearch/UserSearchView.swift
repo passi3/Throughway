@@ -22,13 +22,13 @@ struct UserSearchView: View {
                 Divider()
                 resultContent
             }
-            .background(Color.gray0)
+            .background(Color.bgPrimary)
             .navigationTitle("사용자 검색")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
                     Button("취소") { dismiss() }
-                        .foregroundStyle(Color.gray60)
+                        .foregroundStyle(Color.textSecondary)
                 }
             }
         }
@@ -39,13 +39,13 @@ struct UserSearchView: View {
     private var searchBar: some View {
         HStack(spacing: 8) {
             Image(systemName: "magnifyingglass")
-                .foregroundStyle(Color.gray45)
+                .foregroundStyle(Color.textTertiary)
 
             TextField("닉네임 검색", text: Binding(
                 get: { viewModel.state.query },
                 set: { viewModel.send(.queryChanged($0)) }
             ))
-            .font(.Pretendard.body2)
+            .font(.Pretendard.body3)
             .submitLabel(.search)
             .onSubmit { viewModel.send(.searchSubmitted) }
 
@@ -54,13 +54,13 @@ struct UserSearchView: View {
                     viewModel.send(.queryChanged(""))
                 } label: {
                     Image(systemName: "xmark.circle.fill")
-                        .foregroundStyle(Color.gray45)
+                        .foregroundStyle(Color.textTertiary)
                 }
             }
         }
         .padding(.horizontal, 12)
         .padding(.vertical, 10)
-        .background(Color.gray15)
+        .background(Color.bgTertiary)
         .clipShape(RoundedRectangle(cornerRadius: 10))
         .padding(.horizontal, 16)
         .padding(.vertical, 12)
@@ -77,10 +77,10 @@ struct UserSearchView: View {
             VStack(spacing: 12) {
                 Image(systemName: "person.slash")
                     .font(.system(size: 40))
-                    .foregroundStyle(Color.gray45)
+                    .foregroundStyle(Color.textTertiary)
                 Text("검색 결과가 없습니다")
-                    .font(.Pretendard.body2)
-                    .foregroundStyle(Color.gray45)
+                    .font(.Pretendard.body3)
+                    .foregroundStyle(Color.textTertiary)
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
         } else {
@@ -94,8 +94,8 @@ struct UserSearchView: View {
                 } label: {
                     UserSearchRowView(user: user, query: viewModel.state.query)
                 }
-                .listRowBackground(Color.gray0)
-                .listRowSeparatorTint(Color.gray15)
+                .listRowBackground(Color.bgPrimary)
+                .listRowSeparatorTint(Color.border)
             }
             .listStyle(.plain)
         }
@@ -115,8 +115,8 @@ private struct UserSearchRowView: View {
                 highlightedNick
                 if let intro = user.introduction, !intro.isEmpty {
                     Text(intro)
-                        .font(.Pretendard.caption1)
-                        .foregroundStyle(Color.gray60)
+                        .font(.Pretendard.caption2)
+                        .foregroundStyle(Color.textSecondary)
                         .lineLimit(1)
                 }
             }
@@ -135,7 +135,7 @@ private struct UserSearchRowView: View {
             } else {
                 Image(systemName: "person.circle.fill")
                     .resizable()
-                    .foregroundStyle(Color.gray30)
+                    .foregroundStyle(Color.textTertiary)
             }
         }
         .frame(width: 44, height: 44)
@@ -144,7 +144,7 @@ private struct UserSearchRowView: View {
 
     private var highlightedNick: some View {
         Text(attributedNick)
-            .font(.Pretendard.body2)
+            .font(.Pretendard.body3)
     }
 
     private var attributedNick: AttributedString {
@@ -155,7 +155,7 @@ private struct UserSearchRowView: View {
             return attributed
         }
         attributed[range].font = .system(size: 15, weight: .bold)
-        attributed[range].foregroundColor = UIColor(Color.blackSeafoam)
+        attributed[range].foregroundColor = UIColor(Color.primary)
         return attributed
     }
 }

@@ -31,7 +31,7 @@ struct SignUpView: View {
                 .padding(.horizontal, 20)
             }
         }
-        .background(Color.gray0)
+        .background(Color.bgSecondary)
         .navigationBarHidden(true)
     }
 }
@@ -45,14 +45,14 @@ private extension SignUpView {
             Text("회원가입")
                 .font(.Pretendard.body1)
                 .fontWeight(.semibold)
-                .foregroundStyle(Color.gray100)
+                .foregroundStyle(Color.dark)
 
             HStack {
                 Button {
                     viewModel.send(.backTapped)
                 } label: {
                     AppIcon.back
-                        .foregroundStyle(Color.gray100)
+                        .foregroundStyle(Color.dark)
                 }
                 Spacer()
             }
@@ -115,12 +115,12 @@ private extension SignUpView {
         } label: {
             HStack(spacing: 8) {
                 Image(systemName: isAgreed ? "checkmark.square.fill" : "square")
-                    .foregroundStyle(isAgreed ? Color.blackSeafoam : Color.gray45)
+                    .foregroundStyle(isAgreed ? Color.primary : Color.textTertiary)
                     .font(.system(size: 18))
 
                 Text("서비스 이용약관 및 개인정보 처리방침에 동의합니다")
-                    .font(.Pretendard.caption1)
-                    .foregroundStyle(Color.gray75)
+                    .font(.Pretendard.caption2)
+                    .foregroundStyle(Color.textSecondary)
                     .multilineTextAlignment(.leading)
 
                 Spacer()
@@ -147,7 +147,7 @@ private extension SignUpView {
             }
             .frame(maxWidth: .infinity)
             .frame(height: 52)
-            .background(isEnabled ? Color.blackSeafoam : Color.gray30)
+            .background(isEnabled ? Color.primary : Color.bgTertiary)
             .clipShape(RoundedRectangle(cornerRadius: 10))
         }
         .disabled(!isEnabled || isLoading)
@@ -156,13 +156,13 @@ private extension SignUpView {
     var loginLinkSection: some View {
         HStack(spacing: 4) {
             Text("이미 계정이 있으신가요?")
-                .font(.Pretendard.caption1)
-                .foregroundStyle(Color.gray60)
+                .font(.Pretendard.caption2)
+                .foregroundStyle(Color.textSecondary)
             Button("로그인") {
                 viewModel.send(.loginLinkTapped)
             }
-            .font(.Pretendard.caption1)
-            .foregroundStyle(Color.blackSeafoam)
+            .font(.Pretendard.caption2)
+            .foregroundStyle(Color.primary)
         }
     }
 
@@ -215,16 +215,16 @@ private extension SignUpView {
     ) -> some View {
         VStack(alignment: .leading, spacing: 6) {
             Text(label)
-                .font(.Pretendard.caption1)
-                .foregroundStyle(Color.gray90)
+                .font(.Pretendard.caption2)
+                .foregroundStyle(Color.textPrimary)
 
             HStack(spacing: 8) {
                 HStack(spacing: 10) {
                     Image(systemName: icon)
-                        .foregroundStyle(Color.gray45)
+                        .foregroundStyle(Color.textTertiary)
                     TextField(placeholder, text: text)
-                        .font(.Pretendard.body2)
-                        .foregroundStyle(Color.gray90)
+                        .font(.Pretendard.body3)
+                        .foregroundStyle(Color.textPrimary)
                         .keyboardType(keyboardType)
                         .autocorrectionDisabled()
                         .textInputAutocapitalization(.never)
@@ -245,13 +245,13 @@ private extension SignUpView {
                                     .scaleEffect(0.8)
                             } else {
                                 Text(trailingButtonLabel)
-                                    .font(.Pretendard.caption1)
+                                    .font(.Pretendard.caption2)
                                     .fontWeight(.semibold)
                                     .foregroundStyle(.white)
                             }
                         }
                         .frame(width: 76, height: 52)
-                        .background(trailingButtonEnabled ? Color.blackSeafoam : Color.gray30)
+                        .background(trailingButtonEnabled ? Color.primary : Color.bgTertiary)
                         .clipShape(RoundedRectangle(cornerRadius: 8))
                     }
                     .disabled(!trailingButtonEnabled || trailingButtonLoading)
@@ -260,14 +260,14 @@ private extension SignUpView {
 
             if isValid == false {
                 Text(validationMessage(for: label))
-                    .font(.Pretendard.caption3)
-                    .foregroundStyle(Color.rosyPunch)
+                    .font(.Pretendard.caption4)
+                    .foregroundStyle(Color.error)
             }
 
             if let statusMessage {
                 Text(statusMessage)
-                    .font(.Pretendard.caption3)
-                    .foregroundStyle(Color.gray90)
+                    .font(.Pretendard.caption4)
+                    .foregroundStyle(Color.textPrimary)
             }
         }
     }
@@ -283,12 +283,12 @@ private extension SignUpView {
     ) -> some View {
         VStack(alignment: .leading, spacing: 6) {
             Text(label)
-                .font(.Pretendard.caption1)
-                .foregroundStyle(Color.gray90)
+                .font(.Pretendard.caption2)
+                .foregroundStyle(Color.textPrimary)
 
             HStack(spacing: 10) {
                 Image(systemName: "lock")
-                    .foregroundStyle(Color.gray45)
+                    .foregroundStyle(Color.textTertiary)
 
                 Group {
                     if isVisible {
@@ -297,12 +297,12 @@ private extension SignUpView {
                         SecureField(placeholder, text: text)
                     }
                 }
-                .font(.Pretendard.body2)
-                .foregroundStyle(Color.gray90)
+                .font(.Pretendard.body3)
+                .foregroundStyle(Color.textPrimary)
 
                 Button(action: onToggleVisibility) {
                     Image(systemName: isVisible ? "eye" : "eye.slash")
-                        .foregroundStyle(Color.gray45)
+                        .foregroundStyle(Color.textTertiary)
                 }
             }
             .padding(.horizontal, 14)
@@ -315,12 +315,12 @@ private extension SignUpView {
             // hint: 항상 표시 / 오류 메시지 우선
             if isValid == false {
                 Text(validationMessage(for: label))
-                    .font(.Pretendard.caption3)
-                    .foregroundStyle(Color.rosyPunch)
+                    .font(.Pretendard.caption4)
+                    .foregroundStyle(Color.error)
             } else if let hint, isValid == nil {
                 Text(hint)
-                    .font(.Pretendard.caption3)
-                    .foregroundStyle(Color.gray45)
+                    .font(.Pretendard.caption4)
+                    .foregroundStyle(Color.textTertiary)
             }
         }
     }
@@ -329,9 +329,9 @@ private extension SignUpView {
 
     func borderColor(for isValid: Bool?) -> Color {
         switch isValid {
-        case .none:            return .gray15
-        case .some(true):      return .gray15
-        case .some(false):     return .rosyPunch
+        case .none:            return .border
+        case .some(true):      return .border
+        case .some(false):     return .error
         }
     }
 

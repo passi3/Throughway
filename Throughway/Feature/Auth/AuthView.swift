@@ -17,7 +17,7 @@ struct AuthView: View {
             case .loading:
                 ProgressView("세션 확인 중...")
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    .background(Color.gray0)
+                    .background(Color.bgPrimary)
 
             case .unauthenticated:
                 NavigationStack(path: navigationPathBinding) {

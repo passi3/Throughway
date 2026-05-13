@@ -41,7 +41,7 @@ struct MainView: View {
                 }
                 .tag(3)
         }
-        .tint(Color.blackSeafoam)
+        .tint(Color.primary)
         .overlay(alignment: .top) {
             if let info = banner {
                 ChatBannerView(info: info) {
@@ -119,20 +119,20 @@ private struct ChatBannerView: View {
             HStack(spacing: 12) {
                 Image(systemName: "message.fill")
                     .font(.system(size: 20))
-                    .foregroundStyle(Color.blackSeafoam)
+                    .foregroundStyle(Color.primary)
                     .frame(width: 36, height: 36)
-                    .background(Color.blackSeafoam.opacity(0.12))
+                    .background(Color.primary.opacity(0.12))
                     .clipShape(Circle())
 
                 VStack(alignment: .leading, spacing: 2) {
                     Text(info.title)
-                        .font(.Pretendard.body2)
+                        .font(.Pretendard.body3)
                         .fontWeight(.semibold)
-                        .foregroundStyle(Color.gray90)
+                        .foregroundStyle(Color.textPrimary)
                         .lineLimit(1)
                     Text(info.body)
-                        .font(.Pretendard.caption1)
-                        .foregroundStyle(Color.gray60)
+                        .font(.Pretendard.caption2)
+                        .foregroundStyle(Color.textSecondary)
                         .lineLimit(1)
                 }
 

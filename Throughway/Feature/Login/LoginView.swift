@@ -10,11 +10,11 @@ import SwiftUI
 struct LoginView: View {
     @ObservedObject var viewModel: LoginViewModel
     @FocusState private var focusedField: LoginField?
-    
+
     enum LoginField {
         case email, password
     }
-    
+
     var body: some View {
         VStack(spacing: 0) {
             Spacer().frame(height: 36)
@@ -43,8 +43,8 @@ struct LoginView: View {
             Spacer().frame(height: 160)
         }
         .padding(.horizontal, 20)
-        .background(Color.gray0)
-        
+        .background(Color.bgPrimary)
+
     }
 }
 
@@ -55,11 +55,11 @@ private extension LoginView {
             Text("Throughway")
                 .font(.Paperlogy.title1)
                 .fontWeight(.bold)
-                .foregroundStyle(Color.blackSeafoam)
+                .foregroundStyle(Color.primary)
 
             Text("여행을 더 특별하게")
-                .font(.Pretendard.body3)
-                .foregroundStyle(Color.gray60)
+                .font(.Pretendard.body4)
+                .foregroundStyle(Color.textSecondary)
         }
         .frame(maxWidth: .infinity)
     }
@@ -69,15 +69,15 @@ private extension LoginView {
             // 이메일
             VStack(alignment: .leading, spacing: 8) {
                 Text("이메일")
-                    .font(.Pretendard.caption1)
-                    .foregroundStyle(Color.gray90)
+                    .font(.Pretendard.caption2)
+                    .foregroundStyle(Color.textPrimary)
 
                 HStack(spacing: 10) {
                     Image(systemName: "envelope")
-                        .foregroundStyle(Color.gray45)
+                        .foregroundStyle(Color.textTertiary)
                     TextField("이메일을 입력하세요", text: emailBinding)
-                        .font(.Pretendard.body2)
-                        .foregroundStyle(Color.gray90)
+                        .font(.Pretendard.body3)
+                        .foregroundStyle(Color.textPrimary)
                         .keyboardType(.emailAddress)
                         .autocorrectionDisabled()
                         .textInputAutocapitalization(.never)
@@ -89,20 +89,20 @@ private extension LoginView {
                 .frame(height: 52)
                 .overlay {
                     RoundedRectangle(cornerRadius: 8)
-                        .stroke(Color.gray15, lineWidth: 1)
+                        .stroke(Color.border, lineWidth: 1)
                 }
             }
 
             // 비밀번호
             VStack(alignment: .leading, spacing: 8) {
                 Text("비밀번호")
-                    .font(.Pretendard.caption1)
-                    .foregroundStyle(Color.gray90)
+                    .font(.Pretendard.caption2)
+                    .foregroundStyle(Color.textPrimary)
 
                 let isVisible = viewModel.state.isPasswordVisible
                 HStack(spacing: 10) {
                     Image(systemName: "lock")
-                        .foregroundStyle(Color.gray45)
+                        .foregroundStyle(Color.textTertiary)
 
                     Group {
                         if isVisible {
@@ -111,8 +111,8 @@ private extension LoginView {
                             SecureField("비밀번호를 입력하세요", text: passwordBinding)
                         }
                     }
-                    .font(.Pretendard.body2)
-                    .foregroundStyle(Color.gray90)
+                    .font(.Pretendard.body3)
+                    .foregroundStyle(Color.textPrimary)
                     .focused($focusedField, equals: .password)
                     .submitLabel(.go)
                     .onSubmit { viewModel.send(.loginButtonTapped) }
@@ -121,14 +121,14 @@ private extension LoginView {
                         viewModel.send(.passwordVisibilityToggled)
                     } label: {
                         Image(systemName: isVisible ? "eye" : "eye.slash")
-                            .foregroundStyle(Color.gray45)
+                            .foregroundStyle(Color.textTertiary)
                     }
                 }
                 .padding(.horizontal, 14)
                 .frame(height: 52)
                 .overlay {
                     RoundedRectangle(cornerRadius: 8)
-                        .stroke(Color.gray15, lineWidth: 1)
+                        .stroke(Color.border, lineWidth: 1)
                 }
             }
         }
@@ -140,8 +140,8 @@ private extension LoginView {
             Button("비밀번호를 잊으셨나요?") {
                 viewModel.send(.forgotPasswordTapped)
             }
-            .font(.Pretendard.caption1)
-            .foregroundStyle(Color.blackSeafoam)
+            .font(.Pretendard.caption2)
+            .foregroundStyle(Color.primary)
         }
     }
 
@@ -156,13 +156,12 @@ private extension LoginView {
                 } else {
                     Text("로그인")
                         .font(.Pretendard.body1)
-                        .fontWeight(.semibold)
                         .foregroundStyle(.white)
                 }
             }
             .frame(maxWidth: .infinity)
             .frame(height: 52)
-            .background(Color.blackSeafoam)
+            .background(Color.primary)
             .clipShape(RoundedRectangle(cornerRadius: 10))
         }
         .disabled(isLoading)
@@ -172,14 +171,14 @@ private extension LoginView {
         HStack(spacing: 12) {
             Rectangle()
                 .frame(height: 1)
-                .foregroundStyle(Color.gray15)
+                .foregroundStyle(Color.border)
             Text("또는")
-                .font(.Pretendard.caption1)
-                .foregroundStyle(Color.gray45)
+                .font(.Pretendard.caption2)
+                .foregroundStyle(Color.textTertiary)
                 .fixedSize()
             Rectangle()
                 .frame(height: 1)
-                .foregroundStyle(Color.gray15)
+                .foregroundStyle(Color.border)
         }
     }
 
@@ -192,7 +191,7 @@ private extension LoginView {
                     Image(systemName: "message.fill")
                         .foregroundStyle(Color(red: 0, green: 0, blue: 0, opacity: 0.85))
                     Text("카카오로 계속하기")
-                        .font(.Pretendard.body2)
+                        .font(.Pretendard.body3)
                         .fontWeight(.medium)
                         .foregroundStyle(Color(red: 0, green: 0, blue: 0, opacity: 0.85))
                 }
@@ -209,13 +208,13 @@ private extension LoginView {
                     Image(systemName: "apple.logo")
                         .foregroundStyle(.white)
                     Text("Apple로 계속하기")
-                        .font(.Pretendard.body2)
+                        .font(.Pretendard.body3)
                         .fontWeight(.medium)
                         .foregroundStyle(.white)
                 }
                 .frame(maxWidth: .infinity)
                 .frame(height: 52)
-                .background(Color.gray100)
+                .background(Color.dark)
                 .clipShape(RoundedRectangle(cornerRadius: 10))
             }
         }
@@ -224,13 +223,13 @@ private extension LoginView {
     var signUpSection: some View {
         HStack(spacing: 4) {
             Text("아직 계정이 없으신가요?")
-                .font(.Pretendard.caption1)
-                .foregroundStyle(Color.gray60)
+                .font(.Pretendard.caption2)
+                .foregroundStyle(Color.textSecondary)
             Button("회원가입") {
                 viewModel.send(.signUpTapped)
             }
-            .font(.Pretendard.caption1)
-            .foregroundStyle(Color.blackSeafoam)
+            .font(.Pretendard.caption2)
+            .foregroundStyle(Color.primary)
         }
     }
 

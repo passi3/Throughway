@@ -9,20 +9,36 @@ import SwiftUI
 
 extension Color {
     // MARK: - Brand
-    static let blackSeafoam = Color(hex: "#4382AC")
-    static let deepSeafoam  = Color(hex: "#7AB5DC")
-    static let lightSeafoam = Color(hex: "#D6E5EA")
-    static let rosyPunch    = Color(hex: "#F66490")
+    /// #006D77  메인 브랜드 컬러 (버튼, 액티브 탭, 링크)
+    static let primary      = Color(hex: "#006D77")
+    /// #E0F2F4  브랜드 연한 배경 (배지, 칩 배경)
+    static let primaryLight = Color(hex: "#E0F2F4")
 
-    // MARK: - GrayScale
-    static let gray0   = Color(hex: "#FFFFFF")
-    static let gray15  = Color(hex: "#D9D9D9")
-    static let gray30  = Color(hex: "#B3B3B3")
-    static let gray45  = Color(hex: "#8C8C8C")
-    static let gray60  = Color(hex: "#666666")
-    static let gray75  = Color(hex: "#404040")
-    static let gray90  = Color(hex: "#1A1A1A")
-    static let gray100 = Color(hex: "#000000")
+    // MARK: - Text
+    /// #1F2937  기본 텍스트
+    static let textPrimary   = Color(hex: "#1F2937")
+    /// #6B7280  보조 텍스트
+    static let textSecondary = Color(hex: "#6B7280")
+    /// #9CA3AF  비활성 / 힌트 텍스트
+    static let textTertiary  = Color(hex: "#9CA3AF")
+
+    // MARK: - Background
+    /// #FFFFFF  카드, 입력 필드, 탭바 배경
+    static let bgPrimary   = Color(hex: "#FFFFFF")
+    /// #F9FAFB  화면 기본 배경
+    static let bgSecondary = Color(hex: "#F9FAFB")
+    /// #F3F4F6  비활성 칩, 구분 영역
+    static let bgTertiary  = Color(hex: "#F3F4F6")
+
+    // MARK: - Border
+    /// #E5E7EB  스트로크, 구분선
+    static let border = Color(hex: "#E5E7EB")
+
+    // MARK: - Semantic
+    /// #111827  다크 그라디언트, 오버레이
+    static let dark  = Color(hex: "#111827")
+    /// #EF4444  에러, 경고
+    static let error = Color(hex: "#EF4444")
 }
 
 private extension Color {

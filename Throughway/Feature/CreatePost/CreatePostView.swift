@@ -43,20 +43,20 @@ struct CreatePostView: View {
 
                     if let error = viewModel.state.error {
                         Text(error)
-                            .font(.Pretendard.caption1)
+                            .font(.Pretendard.caption2)
                             .foregroundStyle(.red)
                     }
                 }
                 .padding(16)
             }
             .scrollDismissesKeyboard(.interactively)
-            .background(Color.gray0)
+            .background(Color.bgPrimary)
             .navigationTitle(viewModel.state.postId != nil ? "포스트 수정" : "포스트 등록")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("취소") { dismiss() }
-                        .foregroundStyle(Color.gray60)
+                        .foregroundStyle(Color.textSecondary)
                 }
                 ToolbarItem(placement: .confirmationAction) {
                     submitButton
@@ -92,8 +92,8 @@ private extension CreatePostView {
         HStack(spacing: 12) {
             VStack(alignment: .leading, spacing: 6) {
                 Text("국가")
-                    .font(.Pretendard.caption1)
-                    .foregroundStyle(Color.gray60)
+                    .font(.Pretendard.caption2)
+                    .foregroundStyle(Color.textSecondary)
 
                 Menu {
                     ForEach(countries, id: \.self) { country in
@@ -104,27 +104,27 @@ private extension CreatePostView {
                 } label: {
                     HStack {
                         Text(viewModel.state.country ?? "선택")
-                            .foregroundStyle(viewModel.state.country != nil ? Color.gray90 : Color.gray45)
+                            .foregroundStyle(viewModel.state.country != nil ? Color.textPrimary : Color.textTertiary)
                         Spacer()
                         Image(systemName: "chevron.down")
                             .font(.system(size: 12))
-                            .foregroundStyle(Color.gray45)
+                            .foregroundStyle(Color.textTertiary)
                     }
-                    .font(.Pretendard.body2)
+                    .font(.Pretendard.body3)
                     .padding(.horizontal, 14)
                     .padding(.vertical, 12)
-                    .background(Color.gray0)
+                    .background(Color.bgPrimary)
                     .overlay(
                         RoundedRectangle(cornerRadius: 10)
-                            .stroke(Color.gray15, lineWidth: 1)
+                            .stroke(Color.border, lineWidth: 1)
                     )
                 }
             }
 
             VStack(alignment: .leading, spacing: 6) {
                 Text("카테고리")
-                    .font(.Pretendard.caption1)
-                    .foregroundStyle(Color.gray60)
+                    .font(.Pretendard.caption2)
+                    .foregroundStyle(Color.textSecondary)
 
                 Menu {
                     ForEach(categories, id: \.self) { category in
@@ -135,19 +135,19 @@ private extension CreatePostView {
                 } label: {
                     HStack {
                         Text(viewModel.state.category ?? "선택")
-                            .foregroundStyle(viewModel.state.category != nil ? Color.gray90 : Color.gray45)
+                            .foregroundStyle(viewModel.state.category != nil ? Color.textPrimary : Color.textTertiary)
                         Spacer()
                         Image(systemName: "chevron.down")
                             .font(.system(size: 12))
-                            .foregroundStyle(Color.gray45)
+                            .foregroundStyle(Color.textTertiary)
                     }
-                    .font(.Pretendard.body2)
+                    .font(.Pretendard.body3)
                     .padding(.horizontal, 14)
                     .padding(.vertical, 12)
-                    .background(Color.gray0)
+                    .background(Color.bgPrimary)
                     .overlay(
                         RoundedRectangle(cornerRadius: 10)
-                            .stroke(Color.gray15, lineWidth: 1)
+                            .stroke(Color.border, lineWidth: 1)
                     )
                 }
             }
@@ -157,21 +157,21 @@ private extension CreatePostView {
     var titleSection: some View {
         VStack(alignment: .leading, spacing: 6) {
             Text("제목")
-                .font(.Pretendard.caption1)
-                .foregroundStyle(Color.gray60)
+                .font(.Pretendard.caption2)
+                .foregroundStyle(Color.textSecondary)
 
             TextField("제목을 입력하세요", text: Binding(
                 get: { viewModel.state.title },
                 set: { viewModel.send(.titleChanged($0)) }
             ))
-            .font(.Pretendard.body2)
-            .foregroundStyle(Color.gray90)
+            .font(.Pretendard.body3)
+            .foregroundStyle(Color.textPrimary)
             .padding(.horizontal, 14)
             .padding(.vertical, 12)
-            .background(Color.gray0)
+            .background(Color.bgPrimary)
             .overlay(
                 RoundedRectangle(cornerRadius: 10)
-                    .stroke(Color.gray15, lineWidth: 1)
+                    .stroke(Color.border, lineWidth: 1)
             )
         }
     }
@@ -179,22 +179,22 @@ private extension CreatePostView {
     var contentSection: some View {
         VStack(alignment: .leading, spacing: 6) {
             Text("내용")
-                .font(.Pretendard.caption1)
-                .foregroundStyle(Color.gray60)
+                .font(.Pretendard.caption2)
+                .foregroundStyle(Color.textSecondary)
 
             TextEditor(text: Binding(
                 get: { viewModel.state.content },
                 set: { viewModel.send(.contentChanged($0)) }
             ))
-            .font(.Pretendard.body3)
-            .foregroundStyle(Color.gray90)
+            .font(.Pretendard.body4)
+            .foregroundStyle(Color.textPrimary)
             .scrollContentBackground(.hidden)
             .padding(10)
             .frame(minHeight: 120)
-            .background(Color.gray0)
+            .background(Color.bgPrimary)
             .overlay(
                 RoundedRectangle(cornerRadius: 10)
-                    .stroke(Color.gray15, lineWidth: 1)
+                    .stroke(Color.border, lineWidth: 1)
             )
         }
     }
@@ -204,8 +204,8 @@ private extension CreatePostView {
 
         return VStack(alignment: .leading, spacing: 6) {
             Text("사진")
-                .font(.Pretendard.caption1)
-                .foregroundStyle(Color.gray60)
+                .font(.Pretendard.caption2)
+                .foregroundStyle(Color.textSecondary)
 
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 10) {
@@ -217,16 +217,16 @@ private extension CreatePostView {
                         VStack(spacing: 6) {
                             Image(systemName: "camera")
                                 .font(.system(size: 22))
-                                .foregroundStyle(Color.gray45)
+                                .foregroundStyle(Color.textTertiary)
                             Text("\(totalCount)/5")
-                                .font(.Pretendard.caption2)
-                                .foregroundStyle(Color.gray45)
+                                .font(.Pretendard.caption3)
+                                .foregroundStyle(Color.textTertiary)
                         }
                         .frame(width: 72, height: 72)
-                        .background(Color.gray0)
+                        .background(Color.bgPrimary)
                         .overlay(
                             RoundedRectangle(cornerRadius: 10)
-                                .stroke(Color.gray15, lineWidth: 1)
+                                .stroke(Color.border, lineWidth: 1)
                         )
                     }
                     .disabled(totalCount >= 5)
@@ -238,7 +238,7 @@ private extension CreatePostView {
                                 .requestModifier(AuthImageModifier())
                                 .placeholder {
                                     RoundedRectangle(cornerRadius: 10)
-                                        .fill(Color.gray15)
+                                        .fill(Color.bgTertiary)
                                 }
                                 .resizable()
                                 .scaledToFill()
@@ -250,8 +250,8 @@ private extension CreatePostView {
                             } label: {
                                 Image(systemName: "xmark.circle.fill")
                                     .font(.system(size: 18))
-                                    .foregroundStyle(Color.gray0)
-                                    .background(Circle().fill(Color.gray90.opacity(0.6)))
+                                    .foregroundStyle(Color.bgPrimary)
+                                    .background(Circle().fill(Color.textPrimary.opacity(0.6)))
                             }
                             .offset(x: 4, y: -4)
                         }
@@ -272,8 +272,8 @@ private extension CreatePostView {
                                 } label: {
                                     Image(systemName: "xmark.circle.fill")
                                         .font(.system(size: 18))
-                                        .foregroundStyle(Color.gray0)
-                                        .background(Circle().fill(Color.gray90.opacity(0.6)))
+                                        .foregroundStyle(Color.bgPrimary)
+                                        .background(Circle().fill(Color.textPrimary.opacity(0.6)))
                                 }
                                 .offset(x: 4, y: -4)
                             }
@@ -290,11 +290,11 @@ private extension CreatePostView {
         } label: {
             if viewModel.state.isSubmitting {
                 ProgressView()
-                    .tint(Color.blackSeafoam)
+                    .tint(Color.primary)
             } else {
                 Text(viewModel.state.postId != nil ? "저장" : "등록")
                     .fontWeight(.semibold)
-                    .foregroundStyle(isFormValid ? Color.blackSeafoam : Color.gray30)
+                    .foregroundStyle(isFormValid ? Color.primary : Color.textTertiary)
             }
         }
         .disabled(!isFormValid || viewModel.state.isSubmitting)

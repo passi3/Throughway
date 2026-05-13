@@ -53,18 +53,18 @@ struct PostDetailOverlayView: View {
                         activityLinkSection
                         actionBar
                         Divider()
-                            .background(Color.gray15)
+                            .background(Color.border)
                             .padding(.horizontal, 16)
                         commentsSection
                     }
                 }
 
                 Divider()
-                    .background(Color.gray15)
+                    .background(Color.border)
 
                 commentInputBar
             }
-            .background(Color.gray0)
+            .background(Color.bgPrimary)
             .clipShape(RoundedRectangle(cornerRadius: 20))
             .padding(.horizontal, 16)
             .padding(.vertical, 52)
@@ -85,13 +85,13 @@ private extension PostDetailOverlayView {
     var postTextSection: some View {
         VStack(alignment: .leading, spacing: 6) {
             Text(post.title)
-                .font(.Pretendard.body3)
+                .font(.Pretendard.body4)
                 .fontWeight(.semibold)
-                .foregroundStyle(Color.gray90)
+                .foregroundStyle(Color.textPrimary)
 
             Text(post.content)
-                .font(.Pretendard.body3)
-                .foregroundStyle(Color.gray60)
+                .font(.Pretendard.body4)
+                .foregroundStyle(Color.textSecondary)
                 .lineSpacing(3)
         }
         .padding(.horizontal, 16)
@@ -104,8 +104,8 @@ private extension PostDetailOverlayView {
                 .requestModifier(AuthImageModifier())
                 .placeholder {
                     Circle()
-                        .fill(Color.gray15)
-                        .overlay(Image(systemName: "person.fill").foregroundStyle(Color.gray45))
+                        .fill(Color.bgTertiary)
+                        .overlay(Image(systemName: "person.fill").foregroundStyle(Color.textTertiary))
                 }
                 .resizable()
                 .scaledToFill()
@@ -114,13 +114,13 @@ private extension PostDetailOverlayView {
 
             VStack(alignment: .leading, spacing: 2) {
                 Text(post.creator.nick)
-                    .font(.Pretendard.body3)
+                    .font(.Pretendard.body4)
                     .fontWeight(.semibold)
-                    .foregroundStyle(Color.gray90)
+                    .foregroundStyle(Color.textPrimary)
                 if let country = post.country {
                     Text(country)
-                        .font(.Pretendard.caption2)
-                        .foregroundStyle(Color.gray45)
+                        .font(.Pretendard.caption3)
+                        .foregroundStyle(Color.textTertiary)
                 }
             }
 
@@ -131,7 +131,7 @@ private extension PostDetailOverlayView {
             } label: {
                 Image(systemName: "xmark")
                     .font(.system(size: 16, weight: .medium))
-                    .foregroundStyle(Color.gray60)
+                    .foregroundStyle(Color.textSecondary)
                     .padding(8)
             }
         }
@@ -165,7 +165,7 @@ private extension PostDetailOverlayView {
             HStack(spacing: 8) {
                 Image(systemName: "tag.fill")
                     .font(.system(size: 12))
-                    .foregroundStyle(Color.blackSeafoam)
+                    .foregroundStyle(Color.primary)
 
                 if let country = post.country, !country.isEmpty {
                     Button {
@@ -191,28 +191,28 @@ private extension PostDetailOverlayView {
                     onRelatedActivitiesTapped(post.country, post.category)
                 } label: {
                     Text("관련 액티비티 보기")
-                        .font(.Pretendard.caption1)
-                        .foregroundStyle(Color.blackSeafoam)
+                        .font(.Pretendard.caption2)
+                        .foregroundStyle(Color.primary)
 
                     Image(systemName: "chevron.right")
                         .font(.system(size: 12))
-                        .foregroundStyle(Color.gray45)
+                        .foregroundStyle(Color.textTertiary)
                 }
                 .buttonStyle(.plain)
             }
             .padding(.horizontal, 16)
             .padding(.vertical, 10)
-            .background(Color.blackSeafoam.opacity(0.06))
+            .background(Color.primary.opacity(0.06))
         }
     }
 
     func activityMetaChip(text: String) -> some View {
         Text(text)
-            .font(.Pretendard.caption2)
-            .foregroundStyle(Color.blackSeafoam)
+            .font(.Pretendard.caption3)
+            .foregroundStyle(Color.primary)
             .padding(.horizontal, 8)
             .padding(.vertical, 4)
-            .background(Color.gray0)
+            .background(Color.bgPrimary)
             .clipShape(Capsule())
     }
 
@@ -221,27 +221,27 @@ private extension PostDetailOverlayView {
             actionButton(
                 icon: viewModel.currentIsLike ? "heart.fill" : "heart",
                 label: "\(viewModel.currentLikeCount)",
-                iconColor: viewModel.currentIsLike ? Color.rosyPunch : Color.gray60
+                iconColor: viewModel.currentIsLike ? Color.error : Color.textSecondary
             ) {
                 viewModel.send(.likeTapped)
             }
 
             Divider()
                 .frame(height: 32)
-                .background(Color.gray15)
+                .background(Color.border)
 
-            actionButton(icon: "bookmark", label: "저장", iconColor: Color.gray60) {}
+            actionButton(icon: "bookmark", label: "저장", iconColor: Color.textSecondary) {}
 
             Divider()
                 .frame(height: 32)
-                .background(Color.gray15)
+                .background(Color.border)
 
-            actionButton(icon: "square.and.arrow.up", label: "공유", iconColor: Color.gray60) {}
+            actionButton(icon: "square.and.arrow.up", label: "공유", iconColor: Color.textSecondary) {}
         }
         .padding(.vertical, 12)
         .overlay(
             RoundedRectangle(cornerRadius: 0)
-                .stroke(Color.gray15, lineWidth: 0)
+                .stroke(Color.border, lineWidth: 0)
         )
     }
 
@@ -252,8 +252,8 @@ private extension PostDetailOverlayView {
                     .font(.system(size: 18))
                     .foregroundStyle(iconColor)
                 Text(label)
-                    .font(.Pretendard.caption2)
-                    .foregroundStyle(Color.gray60)
+                    .font(.Pretendard.caption3)
+                    .foregroundStyle(Color.textSecondary)
             }
             .frame(maxWidth: .infinity)
         }
@@ -262,9 +262,9 @@ private extension PostDetailOverlayView {
     var commentsSection: some View {
         VStack(alignment: .leading, spacing: 0) {
             Text("댓글")
-                .font(.Pretendard.body3)
+                .font(.Pretendard.body4)
                 .fontWeight(.semibold)
-                .foregroundStyle(Color.gray90)
+                .foregroundStyle(Color.textPrimary)
                 .padding(.horizontal, 16)
                 .padding(.top, 16)
                 .padding(.bottom, 12)
@@ -275,8 +275,8 @@ private extension PostDetailOverlayView {
                     .padding(.vertical, 20)
             } else if viewModel.state.comments.isEmpty {
                 Text("첫 댓글을 남겨보세요")
-                    .font(.Pretendard.caption1)
-                    .foregroundStyle(Color.gray45)
+                    .font(.Pretendard.caption2)
+                    .foregroundStyle(Color.textTertiary)
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, 20)
             } else {
@@ -306,7 +306,7 @@ private extension PostDetailOverlayView {
 
                             if hasReplies {
                                 Rectangle()
-                                    .fill(Color.gray15)
+                                    .fill(Color.bgTertiary)
                                     .frame(width: 1.5)
                                     .frame(maxHeight: .infinity)
                                     .padding(.top, 4)
@@ -319,20 +319,20 @@ private extension PostDetailOverlayView {
                                     onUserSelected(comment.creator.asUserInfo)
                                 } label: {
                                     Text(comment.creator.nick)
-                                        .font(.Pretendard.caption1)
+                                        .font(.Pretendard.caption2)
                                         .fontWeight(.semibold)
-                                        .foregroundStyle(Color.gray90)
+                                        .foregroundStyle(Color.textPrimary)
                                 }
                                 .buttonStyle(.plain)
 
                                 Text(relativeTime(from: comment.createdAt))
-                                    .font(.Pretendard.caption2)
-                                    .foregroundStyle(Color.gray45)
+                                    .font(.Pretendard.caption3)
+                                    .foregroundStyle(Color.textTertiary)
                             }
 
                             Text(comment.content)
-                                .font(.Pretendard.caption1)
-                                .foregroundStyle(Color.gray75)
+                                .font(.Pretendard.caption2)
+                                .foregroundStyle(Color.textSecondary)
                                 .fixedSize(horizontal: false, vertical: true)
                         }
                     }
@@ -348,8 +348,8 @@ private extension PostDetailOverlayView {
                         isCommentFocused = true
                     } label: {
                         Text("답글")
-                            .font(.Pretendard.caption2)
-                            .foregroundStyle(Color.gray45)
+                            .font(.Pretendard.caption3)
+                            .foregroundStyle(Color.textTertiary)
                     }
                     .buttonStyle(.plain)
 
@@ -388,7 +388,7 @@ private extension PostDetailOverlayView {
             HStack(alignment: .top, spacing: 10) {
                 VStack(spacing: 0) {
                     Rectangle()
-                        .fill(Color.gray15)
+                        .fill(Color.bgTertiary)
                         .frame(width: 1.5)
                         .frame(height: isLast ? 16 : nil)
                         .frame(maxHeight: isLast ? nil : .infinity)
@@ -410,19 +410,19 @@ private extension PostDetailOverlayView {
                                 onUserSelected(reply.creator.asUserInfo)
                             } label: {
                                 Text(reply.creator.nick)
-                                    .font(.Pretendard.caption1)
+                                    .font(.Pretendard.caption2)
                                     .fontWeight(.semibold)
-                                    .foregroundStyle(Color.gray90)
+                                    .foregroundStyle(Color.textPrimary)
                             }
                             .buttonStyle(.plain)
 
                             Text(relativeTime(from: reply.createdAt))
-                                .font(.Pretendard.caption2)
-                                .foregroundStyle(Color.gray45)
+                                .font(.Pretendard.caption3)
+                                .foregroundStyle(Color.textTertiary)
                         }
                         Text(reply.content)
-                            .font(.Pretendard.caption1)
-                            .foregroundStyle(Color.gray75)
+                            .font(.Pretendard.caption2)
+                            .foregroundStyle(Color.textSecondary)
                             .fixedSize(horizontal: false, vertical: true)
                     }
                 }
@@ -441,8 +441,8 @@ private extension PostDetailOverlayView {
                     isCommentFocused = true
                 } label: {
                     Text("답글")
-                        .font(.Pretendard.caption2)
-                        .foregroundStyle(Color.gray45)
+                        .font(.Pretendard.caption3)
+                        .foregroundStyle(Color.textTertiary)
                 }
                 .buttonStyle(.plain)
                 Spacer()
@@ -469,11 +469,11 @@ private extension PostDetailOverlayView {
             .requestModifier(AuthImageModifier())
             .placeholder {
                 Circle()
-                    .fill(Color.gray15)
+                    .fill(Color.bgTertiary)
                     .overlay(
                         Image(systemName: "person.fill")
                             .font(.system(size: size * 0.4))
-                            .foregroundStyle(Color.gray45)
+                            .foregroundStyle(Color.textTertiary)
                     )
             }
             .resizable()
@@ -487,8 +487,8 @@ private extension PostDetailOverlayView {
             if viewModel.state.editingCommentId != nil {
                 HStack {
                     Text("댓글 수정 중")
-                        .font(.Pretendard.caption2)
-                        .foregroundStyle(Color.blackSeafoam)
+                        .font(.Pretendard.caption3)
+                        .foregroundStyle(Color.primary)
 
                     Spacer()
 
@@ -497,18 +497,18 @@ private extension PostDetailOverlayView {
                     } label: {
                         Image(systemName: "xmark")
                             .font(.system(size: 12))
-                            .foregroundStyle(Color.gray45)
+                            .foregroundStyle(Color.textTertiary)
                     }
                 }
                 .padding(.horizontal, 16)
                 .padding(.top, 8)
                 .padding(.bottom, 4)
-                .background(Color.blackSeafoam.opacity(0.06))
+                .background(Color.primary.opacity(0.06))
             } else if let replyTarget = viewModel.state.replyingTo {
                 HStack {
                     Text("@\(replyTarget.nick)에 답글")
-                        .font(.Pretendard.caption2)
-                        .foregroundStyle(Color.blackSeafoam)
+                        .font(.Pretendard.caption3)
+                        .foregroundStyle(Color.primary)
 
                     Spacer()
 
@@ -517,13 +517,13 @@ private extension PostDetailOverlayView {
                     } label: {
                         Image(systemName: "xmark")
                             .font(.system(size: 12))
-                            .foregroundStyle(Color.gray45)
+                            .foregroundStyle(Color.textTertiary)
                     }
                 }
                 .padding(.horizontal, 16)
                 .padding(.top, 8)
                 .padding(.bottom, 4)
-                .background(Color.blackSeafoam.opacity(0.06))
+                .background(Color.primary.opacity(0.06))
             }
 
             HStack(spacing: 10) {
@@ -531,8 +531,8 @@ private extension PostDetailOverlayView {
                     get: { viewModel.state.commentText },
                     set: { viewModel.send(.commentTextChanged($0)) }
                 ))
-                .font(.Pretendard.body3)
-                .foregroundStyle(Color.gray90)
+                .font(.Pretendard.body4)
+                .foregroundStyle(Color.textPrimary)
                 .focused($isCommentFocused)
                 .submitLabel(.send)
                 .onSubmit {
@@ -548,7 +548,7 @@ private extension PostDetailOverlayView {
                     } else {
                         Image(systemName: "paperplane.fill")
                             .font(.system(size: 16))
-                            .foregroundStyle(viewModel.state.commentText.isEmpty ? Color.gray30 : Color.blackSeafoam)
+                            .foregroundStyle(viewModel.state.commentText.isEmpty ? Color.textTertiary : Color.primary)
                     }
                 }
                 .disabled(viewModel.state.commentText.isEmpty || viewModel.state.isSubmittingComment)

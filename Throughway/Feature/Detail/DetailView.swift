@@ -36,7 +36,7 @@ struct DetailView: View {
                     Text("엑티비티 예약설정")
                         .font(.Pretendard.body1)
                         .fontWeight(.bold)
-                        .foregroundStyle(Color.gray90)
+                        .foregroundStyle(Color.textPrimary)
                     dateSection
                     divider
                     timeSection
@@ -48,7 +48,7 @@ struct DetailView: View {
                 Spacer().frame(height: 80)
             }
         }
-        .background(Color.gray0)
+        .background(Color.bgPrimary)
         .overlay(alignment: .bottom) { bottomBar }
         .navigationTitle(viewModel.title)
         .navigationBarTitleDisplayMode(.inline)
@@ -58,7 +58,7 @@ struct DetailView: View {
                     viewModel.send(.keepToggled)
                 } label: {
                     Image(systemName: viewModel.isKeep ? "heart.fill" : "heart")
-                        .foregroundStyle(viewModel.isKeep ? Color.rosyPunch : Color.gray90)
+                        .foregroundStyle(viewModel.isKeep ? Color.error : Color.textPrimary)
                 }
             }
         }
@@ -119,11 +119,11 @@ private extension DetailView {
     
     var heroPlaceholder: some View {
         Rectangle()
-            .fill(Color.gray15)
+            .fill(Color.border)
             .overlay(
                 Image(systemName: "photo")
                     .font(.system(size: 48))
-                    .foregroundStyle(Color.gray30)
+                    .foregroundStyle(Color.border)
             )
     }
     
@@ -132,43 +132,43 @@ private extension DetailView {
             Text(viewModel.title)
                 .font(.Pretendard.title1)
                 .fontWeight(.bold)
-                .foregroundStyle(Color.gray90)
+                .foregroundStyle(Color.textPrimary)
             
             HStack(spacing: 8) {
                 Text(viewModel.country)
-                    .font(.Pretendard.caption1)
-                    .foregroundStyle(Color.gray60)
+                    .font(.Pretendard.caption2)
+                    .foregroundStyle(Color.textSecondary)
                 
                 Text("|")
-                    .font(.Pretendard.caption1)
-                    .foregroundStyle(Color.gray30)
+                    .font(.Pretendard.caption2)
+                    .foregroundStyle(Color.border)
                 
                 HStack(spacing: 3) {
                     Circle()
-                        .fill(Color.blackSeafoam)
+                        .fill(Color.primary)
                         .frame(width: 8, height: 8)
                     Text("\(viewModel.pointReward)P")
-                        .font(.Pretendard.caption1)
+                        .font(.Pretendard.caption2)
                         .fontWeight(.semibold)
-                        .foregroundStyle(Color.blackSeafoam)
+                        .foregroundStyle(Color.primary)
                 }
                 
                 if let rating = viewModel.rating {
                     Text("|")
-                        .font(.Pretendard.caption1)
-                        .foregroundStyle(Color.gray30)
+                        .font(.Pretendard.caption2)
+                        .foregroundStyle(Color.border)
                     HStack(spacing: 3) {
                         Image(systemName: "star.fill")
                             .font(.system(size: 10))
                             .foregroundStyle(Color.yellow)
                         Text(String(format: "%.1f", rating))
-                            .font(.Pretendard.caption1)
+                            .font(.Pretendard.caption2)
                             .fontWeight(.semibold)
-                            .foregroundStyle(Color.gray90)
+                            .foregroundStyle(Color.textPrimary)
                         if let count = viewModel.reviewCount {
                             Text("(\(count))")
-                                .font(.Pretendard.caption2)
-                                .foregroundStyle(Color.gray45)
+                                .font(.Pretendard.caption3)
+                                .foregroundStyle(Color.textTertiary)
                         }
                     }
                 }
@@ -176,27 +176,27 @@ private extension DetailView {
             
             if let desc = viewModel.state.detail?.description, !desc.isEmpty {
                 Text(desc)
-                    .font(.Pretendard.body3)
-                    .foregroundStyle(Color.gray75)
+                    .font(.Pretendard.body4)
+                    .foregroundStyle(Color.textSecondary)
                     .lineSpacing(4)
             }
             
             HStack(spacing: 16) {
                 Label("누적 구매 \(viewModel.state.detail?.totalOrderCount ?? 0)회",
                       systemImage: "bag")
-                .font(.Pretendard.caption1)
-                .foregroundStyle(Color.gray60)
+                .font(.Pretendard.caption2)
+                .foregroundStyle(Color.textSecondary)
                 
                 Label("KEEP \(viewModel.keepCount)회",
                       systemImage: viewModel.isKeep ? "heart.fill" : "heart")
-                .font(.Pretendard.caption1)
-                .foregroundStyle(Color.gray60)
+                .font(.Pretendard.caption2)
+                .foregroundStyle(Color.textSecondary)
             }
             
             if !viewModel.tags.isEmpty {
                 Text(viewModel.tags.map { "#\($0)" }.joined(separator: " "))
-                    .font(.Pretendard.body3)
-                    .foregroundStyle(Color.gray60)
+                    .font(.Pretendard.body4)
+                    .foregroundStyle(Color.textSecondary)
                     .lineSpacing(4)
             }
         }
@@ -226,7 +226,7 @@ private extension DetailView {
         .padding(.vertical, 16)
         .overlay(
             RoundedRectangle(cornerRadius: 10)
-                .stroke(Color.gray15, lineWidth: 1)
+                .stroke(Color.border, lineWidth: 1)
         )
     }
     
@@ -234,14 +234,14 @@ private extension DetailView {
         VStack(spacing: 6) {
             Image(systemName: icon)
                 .font(.system(size: 18))
-                .foregroundStyle(Color.blackSeafoam)
+                .foregroundStyle(Color.primary)
             Text(title)
-                .font(.Pretendard.caption2)
-                .foregroundStyle(Color.gray45)
+                .font(.Pretendard.caption3)
+                .foregroundStyle(Color.textTertiary)
             Text(value)
-                .font(.Pretendard.caption1)
+                .font(.Pretendard.caption2)
                 .fontWeight(.semibold)
-                .foregroundStyle(Color.gray90)
+                .foregroundStyle(Color.textPrimary)
                 .lineLimit(1)
         }
         .frame(maxWidth: .infinity)
@@ -253,32 +253,32 @@ private extension DetailView {
                 HStack(spacing: 6) {
                     Image(systemName: "arrow.down")
                         .font(.system(size: 11))
-                        .foregroundStyle(Color.rosyPunch)
+                        .foregroundStyle(Color.error)
                     Text(viewModel.price.original.wonFormatted)
-                        .font(.Pretendard.body3)
-                        .foregroundStyle(Color.gray45)
-                        .strikethrough(true, color: Color.gray45)
+                        .font(.Pretendard.body4)
+                        .foregroundStyle(Color.textTertiary)
+                        .strikethrough(true, color: Color.textTertiary)
                 }
             }
             
             HStack(alignment: .firstTextBaseline, spacing: 8) {
                 Text("판매가")
-                    .font(.Pretendard.caption1)
-                    .foregroundStyle(Color.gray45)
+                    .font(.Pretendard.caption2)
+                    .foregroundStyle(Color.textTertiary)
                 
                 Text(viewModel.price.final.wonFormatted)
                     .font(.Pretendard.body1)
                     .fontWeight(.bold)
-                    .foregroundStyle(Color.gray90)
+                    .foregroundStyle(Color.textPrimary)
                 
                 if let pct = viewModel.discountPercent {
                     Text("\(pct)%")
-                        .font(.Pretendard.caption1)
+                        .font(.Pretendard.caption2)
                         .fontWeight(.semibold)
-                        .foregroundStyle(Color.gray0)
+                        .foregroundStyle(Color.bgPrimary)
                         .padding(.horizontal, 6)
                         .padding(.vertical, 2)
-                        .background(Color.rosyPunch)
+                        .background(Color.error)
                         .clipShape(RoundedRectangle(cornerRadius: 4))
                 }
             }
@@ -288,20 +288,20 @@ private extension DetailView {
     var scheduleSection: some View {
         VStack(alignment: .leading, spacing: 12) {
             Text("일정")
-                .font(.Pretendard.body2)
+                .font(.Pretendard.body3)
                 .fontWeight(.semibold)
-                .foregroundStyle(Color.gray90)
+                .foregroundStyle(Color.textPrimary)
 
             VStack(alignment: .leading, spacing: 0) {
                 ForEach(Array(viewModel.schedule.enumerated()), id: \.offset) { idx, item in
                     HStack(alignment: .top, spacing: 16) {
                         VStack(spacing: 0) {
                             Circle()
-                                .fill(Color.blackSeafoam)
+                                .fill(Color.primary)
                                 .frame(width: 10, height: 10)
                                 .padding(.top, 4)
                             Rectangle()
-                                .fill(Color.gray30)
+                                .fill(Color.border)
                                 .frame(width: 1.5)
                                 .frame(maxHeight: .infinity)
                         }
@@ -309,12 +309,12 @@ private extension DetailView {
 
                         VStack(alignment: .leading, spacing: 4) {
                             Text(item.duration)
-                                .font(.Pretendard.body3)
+                                .font(.Pretendard.body4)
                                 .fontWeight(.semibold)
-                                .foregroundStyle(Color.gray90)
+                                .foregroundStyle(Color.textPrimary)
                             Text(item.description)
-                                .font(.Pretendard.caption1)
-                                .foregroundStyle(Color.gray60)
+                                .font(.Pretendard.caption2)
+                                .foregroundStyle(Color.textSecondary)
                                 .lineSpacing(3)
                         }
                         .padding(.bottom, 20)
@@ -324,16 +324,16 @@ private extension DetailView {
                 // 마지막: 지도
                 HStack(alignment: .top, spacing: 16) {
                     Circle()
-                        .fill(Color.blackSeafoam)
+                        .fill(Color.primary)
                         .frame(width: 10, height: 10)
                         .padding(.top, 4)
                         .frame(width: 10)
 
                     VStack(alignment: .leading, spacing: 8) {
                         Text("장소 위치 정보")
-                            .font(.Pretendard.body3)
+                            .font(.Pretendard.body4)
                             .fontWeight(.semibold)
-                            .foregroundStyle(Color.gray90)
+                            .foregroundStyle(Color.textPrimary)
 
                         let coord = CLLocationCoordinate2D(
                             latitude: viewModel.geolocation.latitude,
@@ -344,7 +344,7 @@ private extension DetailView {
                             span: MKCoordinateSpan(latitudeDelta: 0.005, longitudeDelta: 0.005)
                         )))) {
                             Marker("", coordinate: coord)
-                                .tint(Color.blackSeafoam)
+                                .tint(Color.primary)
                         }
                         .frame(height: 180)
                         .clipShape(RoundedRectangle(cornerRadius: 10))
@@ -358,14 +358,14 @@ private extension DetailView {
     var dateSection: some View {
         VStack(alignment: .leading, spacing: 12) {
             Text("날짜 선택")
-                .font(.Pretendard.body2)
+                .font(.Pretendard.body3)
                 .fontWeight(.semibold)
-                .foregroundStyle(Color.gray90)
+                .foregroundStyle(Color.textPrimary)
             
             if viewModel.availableDates.isEmpty {
                 Text("예약 가능한 날짜가 없습니다.")
-                    .font(.Pretendard.caption1)
-                    .foregroundStyle(Color.gray45)
+                    .font(.Pretendard.caption2)
+                    .foregroundStyle(Color.textTertiary)
             } else {
                 ScrollView(.horizontal, showsIndicators: false) {
                     HStack(spacing: 8) {
@@ -376,12 +376,12 @@ private extension DetailView {
                                 let display = AppDateFormatter.serverDate.date(from: dateStr)
                                     .map { AppDateFormatter.chipDate.string(from: $0) } ?? dateStr
                                 Text(display)
-                                    .font(.Pretendard.caption1)
+                                    .font(.Pretendard.caption2)
                                     .fontWeight(viewModel.state.selectedDateIndex == index ? .semibold : .regular)
-                                    .foregroundStyle(viewModel.state.selectedDateIndex == index ? Color.gray0 : Color.gray60)
+                                    .foregroundStyle(viewModel.state.selectedDateIndex == index ? Color.bgPrimary : Color.textSecondary)
                                     .padding(.horizontal, 14)
                                     .padding(.vertical, 8)
-                                    .background(viewModel.state.selectedDateIndex == index ? Color.blackSeafoam : Color.gray15)
+                                    .background(viewModel.state.selectedDateIndex == index ? Color.primary : Color.bgTertiary)
                                     .clipShape(RoundedRectangle(cornerRadius: 8))
                             }
                         }
@@ -395,14 +395,14 @@ private extension DetailView {
     var timeSection: some View {
         VStack(alignment: .leading, spacing: 16) {
             Text("시간 선택")
-                .font(.Pretendard.body2)
+                .font(.Pretendard.body3)
                 .fontWeight(.semibold)
-                .foregroundStyle(Color.gray90)
+                .foregroundStyle(Color.textPrimary)
 
             if viewModel.availableTimes.isEmpty {
                 Text("예약 가능한 시간이 없습니다.")
-                    .font(.Pretendard.caption1)
-                    .foregroundStyle(Color.gray45)
+                    .font(.Pretendard.caption2)
+                    .foregroundStyle(Color.textTertiary)
             } else {
                 if !amTimes.isEmpty {
                     timePeriodGrid(label: "오전", slots: amTimes)
@@ -417,9 +417,9 @@ private extension DetailView {
     func timePeriodGrid(label: String, slots: [String]) -> some View {
         VStack(alignment: .leading, spacing: 8) {
             Text(label)
-                .font(.Pretendard.caption1)
+                .font(.Pretendard.caption2)
                 .fontWeight(.semibold)
-                .foregroundStyle(Color.gray60)
+                .foregroundStyle(Color.textSecondary)
             
             LazyVGrid(
                 columns: Array(repeating: GridItem(.flexible(), spacing: 8), count: 4),
@@ -438,28 +438,28 @@ private extension DetailView {
             viewModel.send(.timeSelected(time))
         } label: {
             Text(displayTime(time))
-                .font(.Pretendard.caption2)
+                .font(.Pretendard.caption3)
                 .fontWeight(isSelected ? .semibold : .regular)
-                .foregroundStyle(isSelected ? Color.gray0 : Color.gray60)
+                .foregroundStyle(isSelected ? Color.bgPrimary : Color.textSecondary)
                 .frame(maxWidth: .infinity)
                 .frame(height: 36)
-                .background(isSelected ? Color.blackSeafoam : Color.gray15)
+                .background(isSelected ? Color.primary : Color.bgTertiary)
                 .clipShape(RoundedRectangle(cornerRadius: 8))
         }
     }
     
     var divider: some View {
         Rectangle()
-            .fill(Color.gray15)
+            .fill(Color.border)
             .frame(height: 1)
     }
 
     var participantSection: some View {
         VStack(alignment: .leading, spacing: 12) {
             Text("참가 인원")
-                .font(.Pretendard.body2)
+                .font(.Pretendard.body3)
                 .fontWeight(.semibold)
-                .foregroundStyle(Color.gray90)
+                .foregroundStyle(Color.textPrimary)
 
             HStack(spacing: 16) {
                 Button {
@@ -467,14 +467,14 @@ private extension DetailView {
                 } label: {
                     Image(systemName: "minus.circle")
                         .font(.system(size: 24))
-                        .foregroundStyle(viewModel.state.participantCount > 1 ? Color.blackSeafoam : Color.gray30)
+                        .foregroundStyle(viewModel.state.participantCount > 1 ? Color.primary : Color.border)
                 }
                 .disabled(viewModel.state.participantCount <= 1)
 
                 Text("\(viewModel.state.participantCount)명")
-                    .font(.Pretendard.body2)
+                    .font(.Pretendard.body3)
                     .fontWeight(.semibold)
-                    .foregroundStyle(Color.gray90)
+                    .foregroundStyle(Color.textPrimary)
                     .frame(minWidth: 40, alignment: .center)
 
                 Button {
@@ -482,7 +482,7 @@ private extension DetailView {
                 } label: {
                     Image(systemName: "plus.circle")
                         .font(.system(size: 24))
-                        .foregroundStyle(Color.blackSeafoam)
+                        .foregroundStyle(Color.primary)
                 }
             }
         }
@@ -491,9 +491,9 @@ private extension DetailView {
     var bottomBar: some View {
         HStack(spacing: 12) {
             Text((viewModel.price.final * viewModel.state.participantCount).wonFormatted)
-                .font(.Pretendard.body2)
+                .font(.Pretendard.body3)
                 .fontWeight(.bold)
-                .foregroundStyle(Color.gray90)
+                .foregroundStyle(Color.textPrimary)
                 .frame(maxWidth: .infinity, alignment: .leading)
 
             Spacer()
@@ -507,14 +507,14 @@ private extension DetailView {
                             .tint(.white)
                     } else {
                         Text(paymentButtonTitle)
-                            .font(.Pretendard.body2)
+                            .font(.Pretendard.body3)
                             .fontWeight(.semibold)
                             .foregroundStyle(.white)
                     }
                 }
                 .frame(maxWidth: .infinity)
                 .frame(height: 48)
-                .background(viewModel.isPaymentReady ? Color.blackSeafoam : Color.gray30)
+                .background(viewModel.isPaymentReady ? Color.primary : Color.border)
                 .clipShape(RoundedRectangle(cornerRadius: 10))
             }
             .disabled(!viewModel.isPaymentReady || viewModel.state.paymentPhase.isInProgress)
@@ -524,7 +524,7 @@ private extension DetailView {
         .background(.white)
         .overlay(alignment: .top) {
             Rectangle()
-                .fill(Color.gray15)
+                .fill(Color.border)
                 .frame(height: 1)
         }
     }

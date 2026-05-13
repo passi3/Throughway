@@ -28,7 +28,7 @@ struct UserProfileView: View {
                     .padding(.vertical, 20)
 
                 Divider()
-                    .foregroundStyle(Color.gray15)
+                    .foregroundStyle(Color.border)
 
                 tabBar
                     .padding(.top, 4)
@@ -36,7 +36,7 @@ struct UserProfileView: View {
                 tabContent
             }
         }
-        .background(Color.gray0)
+        .background(Color.bgPrimary)
         .navigationTitle(viewModel.user.nick)
         .navigationBarTitleDisplayMode(.inline)
         .onAppear {
@@ -53,14 +53,14 @@ struct UserProfileView: View {
 
             VStack(alignment: .leading, spacing: 4) {
                 Text(viewModel.user.nick)
-                    .font(.Pretendard.body2)
+                    .font(.Pretendard.body3)
                     .fontWeight(.bold)
-                    .foregroundStyle(Color.gray90)
+                    .foregroundStyle(Color.textPrimary)
 
                 if let intro = viewModel.user.introduction, !intro.isEmpty {
                     Text(intro)
-                        .font(.Pretendard.caption1)
-                        .foregroundStyle(Color.gray60)
+                        .font(.Pretendard.caption2)
+                        .foregroundStyle(Color.textSecondary)
                         .lineLimit(2)
                 }
             }
@@ -82,7 +82,7 @@ struct UserProfileView: View {
             } else {
                 Image(systemName: "person.circle.fill")
                     .resizable()
-                    .foregroundStyle(Color.gray30)
+                    .foregroundStyle(Color.textTertiary)
             }
         }
         .frame(width: 56, height: 56)
@@ -96,16 +96,16 @@ struct UserProfileView: View {
             Group {
                 if viewModel.state.isCreatingRoom {
                     ProgressView()
-                        .tint(Color.gray0)
+                        .tint(Color.bgPrimary)
                         .frame(width: 20, height: 20)
                 } else {
                     Image(systemName: "paperplane.fill")
                         .font(.system(size: 18))
-                        .foregroundStyle(Color.gray0)
+                        .foregroundStyle(Color.bgPrimary)
                 }
             }
             .frame(width: 44, height: 44)
-            .background(Color.blackSeafoam)
+            .background(Color.primary)
             .clipShape(Circle())
         }
         .disabled(viewModel.state.isCreatingRoom)
@@ -128,11 +128,11 @@ struct UserProfileView: View {
             VStack(spacing: 0) {
                 Image(systemName: icon)
                     .font(.system(size: 18))
-                    .foregroundStyle(isSelected ? Color.blackSeafoam : Color.gray30)
+                    .foregroundStyle(isSelected ? Color.primary : Color.textTertiary)
                     .frame(height: 40)
 
                 Rectangle()
-                    .fill(isSelected ? Color.blackSeafoam : Color.clear)
+                    .fill(isSelected ? Color.primary : Color.clear)
                     .frame(height: 2)
             }
         }
@@ -194,9 +194,9 @@ struct UserProfileView: View {
                     )
                     .overlay(alignment: .bottomLeading) {
                         Text(activity.title)
-                            .font(.Pretendard.caption2)
+                            .font(.Pretendard.caption3)
                             .fontWeight(.semibold)
-                            .foregroundStyle(Color.gray0)
+                            .foregroundStyle(Color.bgPrimary)
                             .lineLimit(2)
                             .padding(6)
                             .frame(maxWidth: .infinity, alignment: .leading)
@@ -249,7 +249,7 @@ struct UserProfileView: View {
                 if hasMultiple {
                     Image(systemName: "square.on.square")
                         .font(.system(size: 12))
-                        .foregroundStyle(Color.gray0)
+                        .foregroundStyle(Color.bgPrimary)
                         .shadow(radius: 2)
                         .padding(6)
                 }
@@ -260,12 +260,12 @@ struct UserProfileView: View {
 
     private func gridPlaceholder(size: CGFloat) -> some View {
         Rectangle()
-            .fill(Color.gray15)
+            .fill(Color.bgTertiary)
             .frame(width: size, height: size)
             .overlay(
                 Image(systemName: "photo")
                     .font(.system(size: 20))
-                    .foregroundStyle(Color.gray30)
+                    .foregroundStyle(Color.textTertiary)
             )
     }
 
@@ -273,10 +273,10 @@ struct UserProfileView: View {
         VStack(spacing: 12) {
             Image(systemName: icon)
                 .font(.system(size: 40))
-                .foregroundStyle(Color.gray30)
+                .foregroundStyle(Color.textTertiary)
             Text(text)
-                .font(.Pretendard.body3)
-                .foregroundStyle(Color.gray45)
+                .font(.Pretendard.body4)
+                .foregroundStyle(Color.textTertiary)
         }
         .frame(maxWidth: .infinity)
         .padding(.top, 60)

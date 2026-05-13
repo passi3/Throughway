@@ -64,13 +64,13 @@ struct MediaThumbnailView: View {
 
     private var mediaPlaceholder: some View {
         RoundedRectangle(cornerRadius: cornerRadius)
-            .fill(Color.gray15)
+            .fill(Color.bgTertiary)
             .frame(maxWidth: .infinity)
             .frame(height: height)
             .overlay(
                 Image(systemName: "photo")
                     .font(.system(size: 24))
-                    .foregroundStyle(Color.gray30)
+                    .foregroundStyle(Color.textTertiary)
             )
     }
 }
@@ -507,13 +507,13 @@ struct VideoThumbnailView: View {
                     .clipShape(RoundedRectangle(cornerRadius: cornerRadius))
             } else {
                 RoundedRectangle(cornerRadius: cornerRadius)
-                    .fill(Color.gray15)
+                    .fill(Color.bgTertiary)
                     .frame(maxWidth: .infinity)
                     .frame(height: height)
                     .overlay(
                         Image(systemName: "film")
                             .font(.system(size: 24))
-                            .foregroundStyle(Color.gray30)
+                            .foregroundStyle(Color.textTertiary)
                     )
             }
         }

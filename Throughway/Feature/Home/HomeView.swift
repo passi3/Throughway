@@ -60,7 +60,7 @@ struct HomeView: View {
                         }
                         .padding(.bottom, 88)
                     }
-                    .background(Color.gray0)
+                    .background(Color.bgPrimary)
                     .coordinateSpace(name: "homeScroll")
 
                     if let post = selectedPost {
@@ -181,7 +181,7 @@ private extension HomeView {
             Text(toolbarSectionTitle ?? "Throughway")
                 .font(.Pretendard.body1)
                 .fontWeight(.bold)
-                .foregroundStyle(Color.gray90)
+                .foregroundStyle(Color.textPrimary)
                 .contentTransition(.numericText())
                 .animation(.easeInOut(duration: 0.25), value: toolbarSectionTitle)
 
@@ -191,8 +191,8 @@ private extension HomeView {
                 switch toolbarSectionTitle {
                 case "NEW 액티비티":
                     Button("View All") { showMoreActivities = true }
-                        .font(.Pretendard.caption1)
-                        .foregroundStyle(Color.blackSeafoam)
+                        .font(.Pretendard.caption2)
+                        .foregroundStyle(Color.primary)
                 case "액티비티 포스트":
                     sortOrderMenu
                 default:
@@ -203,7 +203,7 @@ private extension HomeView {
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 12)
-        .background(Color.gray0)
+        .background(Color.bgPrimary)
     }
 
     var shouldShowCreatePostButton: Bool {
@@ -226,13 +226,13 @@ private extension HomeView {
                 .font(.system(size: 15, weight: .semibold))
 
             Text("포스트 등록")
-                .font(.Pretendard.body3)
+                .font(.Pretendard.body4)
                 .fontWeight(.semibold)
         }
-        .foregroundStyle(Color.gray90)
+        .foregroundStyle(Color.textPrimary)
         .padding(.horizontal, 18)
         .padding(.vertical, 14)
-        .background(Color.lightSeafoam)
+        .background(Color.primaryLight)
         .clipShape(Capsule())
         .shadow(color: Color.black.opacity(0.12), radius: 14, x: 0, y: 6)
     }
@@ -252,11 +252,11 @@ private extension HomeView {
         } label: {
             HStack(spacing: 4) {
                 Text(viewModel.state.sortOrder == "createdAt" ? "최신순" : "좋아요순")
-                    .font(.Pretendard.caption1)
-                    .foregroundStyle(Color.gray60)
+                    .font(.Pretendard.caption2)
+                    .foregroundStyle(Color.textSecondary)
                 Image(systemName: "line.3.horizontal")
                     .font(.system(size: 12))
-                    .foregroundStyle(Color.gray60)
+                    .foregroundStyle(Color.textSecondary)
             }
         }
     }
@@ -290,13 +290,13 @@ private extension HomeView {
     var featuredSectionHeader: some View {
         HStack {
             Text("NEW 액티비티")
-                .font(.Pretendard.body2)
+                .font(.Pretendard.body3)
                 .fontWeight(.semibold)
-                .foregroundStyle(Color.gray90)
+                .foregroundStyle(Color.textPrimary)
             Spacer()
             Button("View All") { showMoreActivities = true }
-                .font(.Pretendard.caption1)
-                .foregroundStyle(Color.blackSeafoam)
+                .font(.Pretendard.caption2)
+                .foregroundStyle(Color.primary)
         }
         .padding(.horizontal, 16)
     }
@@ -304,9 +304,9 @@ private extension HomeView {
     var postsSectionHeader: some View {
         HStack {
             Text("액티비티 포스트")
-                .font(.Pretendard.body2)
+                .font(.Pretendard.body3)
                 .fontWeight(.semibold)
-                .foregroundStyle(Color.gray90)
+                .foregroundStyle(Color.textPrimary)
             Spacer()
             sortOrderMenu
         }
@@ -329,12 +329,12 @@ private extension HomeView {
                                 .clipShape(RoundedRectangle(cornerRadius: 2))
 
                             Text(flag.shortName)
-                                .font(.Pretendard.caption1)
-                                .foregroundStyle(selectedFlag == flag ? Color.gray0 : Color.gray75)
+                                .font(.Pretendard.caption2)
+                                .foregroundStyle(selectedFlag == flag ? Color.bgPrimary : Color.textSecondary)
                         }
                         .padding(.horizontal, 10)
                         .padding(.vertical, 6)
-                        .background(selectedFlag == flag ? Color.blackSeafoam : Color.gray15)
+                        .background(selectedFlag == flag ? Color.primary : Color.bgTertiary)
                         .clipShape(Capsule())
                     }
                 }
@@ -351,12 +351,12 @@ private extension HomeView {
                         selectedCategory = index
                     } label: {
                         Text(category)
-                            .font(.Pretendard.body3)
+                            .font(.Pretendard.body4)
                             .fontWeight(selectedCategory == index ? .semibold : .regular)
-                            .foregroundStyle(selectedCategory == index ? Color.gray0 : Color.gray60)
+                            .foregroundStyle(selectedCategory == index ? Color.bgPrimary : Color.textSecondary)
                             .padding(.horizontal, 14)
                             .padding(.vertical, 7)
-                            .background(selectedCategory == index ? Color.blackSeafoam : Color.gray15)
+                            .background(selectedCategory == index ? Color.primary : Color.bgTertiary)
                             .clipShape(Capsule())
                     }
                 }
@@ -414,9 +414,9 @@ private extension HomeView {
                         Image(systemName: "mappin.and.ellipse")
                             .font(.system(size: 10))
                         Text(activity.country)
-                            .font(.Pretendard.caption2)
+                            .font(.Pretendard.caption3)
                     }
-                    .foregroundStyle(Color.gray0)
+                    .foregroundStyle(Color.bgPrimary)
                     .padding(.horizontal, 8)
                     .padding(.vertical, 4)
                     .background(Color.white.opacity(0.2))
@@ -429,28 +429,28 @@ private extension HomeView {
                         Text(activity.title)
                             .font(.Pretendard.title1)
                             .fontWeight(.bold)
-                            .foregroundStyle(Color.gray0)
+                            .foregroundStyle(Color.bgPrimary)
                             .lineLimit(2)
 
                         HStack(spacing: 6) {
                             Circle()
-                                .fill(Color.blackSeafoam)
+                                .fill(Color.primary)
                                 .frame(width: 18, height: 18)
                                 .overlay(
                                     Text("₩")
                                         .font(.system(size: 9))
-                                        .foregroundStyle(Color.gray0)
+                                        .foregroundStyle(Color.bgPrimary)
                                 )
                             Text(activity.price.final.wonFormatted)
-                                .font(.Pretendard.body3)
+                                .font(.Pretendard.body4)
                                 .fontWeight(.semibold)
-                                .foregroundStyle(Color.gray0)
+                                .foregroundStyle(Color.bgPrimary)
                         }
 
                         if !activity.tags.isEmpty {
                             Text(activity.tags.map { "#\($0)" }.joined(separator: " "))
-                                .font(.Pretendard.caption2)
-                                .foregroundStyle(Color.gray0.opacity(0.8))
+                                .font(.Pretendard.caption3)
+                                .foregroundStyle(Color.bgPrimary.opacity(0.8))
                                 .lineLimit(3)
                                 .lineSpacing(3)
                         }
@@ -467,33 +467,33 @@ private extension HomeView {
 
     var cardImagePlaceholder: some View {
         Rectangle()
-            .fill(Color.gray15)
+            .fill(Color.bgTertiary)
             .overlay(
                 Image(systemName: "photo")
                     .font(.system(size: 36))
-                    .foregroundStyle(Color.gray30)
+                    .foregroundStyle(Color.textTertiary)
             )
     }
 
     var featuredPlaceholderCard: some View {
         RoundedRectangle(cornerRadius: 16)
-            .fill(Color.gray15)
+            .fill(Color.bgTertiary)
             .frame(width: 260, height: 340)
             .overlay(
                 Image(systemName: "photo")
                     .font(.system(size: 36))
-                    .foregroundStyle(Color.gray30)
+                    .foregroundStyle(Color.textTertiary)
             )
     }
 
     var featuredEmptyCard: some View {
         RoundedRectangle(cornerRadius: 16)
-            .fill(Color.gray15)
+            .fill(Color.bgTertiary)
             .frame(width: 260, height: 340)
             .overlay(
                 Text("신규 액티비티가 없습니다")
-                    .font(.Pretendard.caption1)
-                    .foregroundStyle(Color.gray45)
+                    .font(.Pretendard.caption2)
+                    .foregroundStyle(Color.textTertiary)
             )
     }
 
@@ -507,9 +507,9 @@ private extension HomeView {
                     Text(viewModel.state.isDistanceEnabled
                          ? String(format: "Distance %.0fKM", viewModel.state.distanceKm)
                          : "Distance 전체")
-                        .font(.Pretendard.body3)
+                        .font(.Pretendard.body4)
                         .fontWeight(.semibold)
-                        .foregroundStyle(Color.blackSeafoam)
+                        .foregroundStyle(Color.primary)
                     Spacer()
                 }
                 .padding(.horizontal, 16)
@@ -520,9 +520,9 @@ private extension HomeView {
                     } label: {
                         Image(systemName: viewModel.state.isDistanceEnabled ? "location.fill" : "location.slash.fill")
                             .font(.system(size: 14, weight: .semibold))
-                            .foregroundStyle(viewModel.state.isDistanceEnabled ? Color.gray0 : Color.gray45)
+                            .foregroundStyle(viewModel.state.isDistanceEnabled ? Color.bgPrimary : Color.textTertiary)
                             .frame(width: 36, height: 36)
-                            .background(viewModel.state.isDistanceEnabled ? Color.blackSeafoam : Color.gray15)
+                            .background(viewModel.state.isDistanceEnabled ? Color.primary : Color.bgTertiary)
                             .clipShape(Circle())
                     }
 
@@ -534,7 +534,7 @@ private extension HomeView {
                         in: 1...50,
                         step: 1
                     )
-                    .tint(Color.blackSeafoam)
+                    .tint(Color.primary)
                     .disabled(!viewModel.state.isDistanceEnabled)
                     .opacity(viewModel.state.isDistanceEnabled ? 1 : 0.3)
                 }
@@ -552,8 +552,8 @@ private extension HomeView {
         LazyVStack(spacing: 16) {
             if viewModel.state.geoPosts.isEmpty {
                 Text("주변 게시물이 없습니다")
-                    .font(.Pretendard.body3)
-                    .foregroundStyle(Color.gray45)
+                    .font(.Pretendard.body4)
+                    .foregroundStyle(Color.textTertiary)
                     .padding(.vertical, 40)
             } else {
                 ForEach(viewModel.state.geoPosts, id: \.postId) { post in
@@ -600,8 +600,8 @@ private extension HomeView {
                             .requestModifier(AuthImageModifier())
                             .placeholder {
                                 Circle()
-                                    .fill(Color.gray15)
-                                    .overlay(Image(systemName: "person.fill").foregroundStyle(Color.gray45))
+                                    .fill(Color.bgTertiary)
+                                    .overlay(Image(systemName: "person.fill").foregroundStyle(Color.textTertiary))
                             }
                             .resizable()
                             .scaledToFill()
@@ -610,17 +610,17 @@ private extension HomeView {
 
                         HStack(spacing: 6) {
                             Text(post.creator.nick)
-                                .font(.Pretendard.body3)
+                                .font(.Pretendard.body4)
                                 .fontWeight(.semibold)
-                                .foregroundStyle(Color.gray90)
+                                .foregroundStyle(Color.textPrimary)
 
                             Text("·")
-                                .font(.Pretendard.caption2)
-                                .foregroundStyle(Color.gray30)
+                                .font(.Pretendard.caption3)
+                                .foregroundStyle(Color.textTertiary)
 
                             Text(relativeTime(from: post.createdAt))
-                                .font(.Pretendard.caption2)
-                                .foregroundStyle(Color.gray45)
+                                .font(.Pretendard.caption3)
+                                .foregroundStyle(Color.textTertiary)
                         }
 
                         Spacer()
@@ -635,7 +635,7 @@ private extension HomeView {
                     } label: {
                         Image(systemName: "ellipsis")
                             .font(.system(size: 14))
-                            .foregroundStyle(Color.gray45)
+                            .foregroundStyle(Color.textTertiary)
                             .frame(width: 32, height: 32)
                     }
                 }
@@ -647,13 +647,13 @@ private extension HomeView {
             // 2. 텍스트 (제목 + 내용)
             VStack(alignment: .leading, spacing: 4) {
                 Text(post.title)
-                    .font(.Pretendard.body3)
+                    .font(.Pretendard.body4)
                     .fontWeight(.semibold)
-                    .foregroundStyle(Color.gray90)
+                    .foregroundStyle(Color.textPrimary)
 
                 Text(post.content)
-                    .font(.Pretendard.body3)
-                    .foregroundStyle(Color.gray60)
+                    .font(.Pretendard.body4)
+                    .foregroundStyle(Color.textSecondary)
                     .lineLimit(2)
                     .lineSpacing(2)
             }
@@ -676,7 +676,7 @@ private extension HomeView {
 
             // 5. 액션 바
             Divider()
-                .background(Color.gray15)
+                .background(Color.border)
 
             HStack(spacing: 0) {
                 // 좋아요
@@ -686,38 +686,38 @@ private extension HomeView {
                     HStack(spacing: 5) {
                         Image(systemName: isLiked ? "heart.fill" : "heart")
                             .font(.system(size: 16))
-                            .foregroundStyle(isLiked ? Color.rosyPunch : Color.gray60)
+                            .foregroundStyle(isLiked ? Color.error : Color.textSecondary)
                         Text("\(likeCount)")
-                            .font(.Pretendard.caption1)
-                            .foregroundStyle(Color.gray60)
+                            .font(.Pretendard.caption2)
+                            .foregroundStyle(Color.textSecondary)
                     }
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, 10)
                 }
                 .buttonStyle(.borderless)
 
-                Divider().frame(height: 18).background(Color.gray15)
+                Divider().frame(height: 18).background(Color.border)
 
                 // 댓글
                 HStack(spacing: 5) {
                     Image(systemName: "bubble.right")
                         .font(.system(size: 15))
-                        .foregroundStyle(Color.gray60)
+                        .foregroundStyle(Color.textSecondary)
                     Text("\(viewModel.commentCount(for: post))")
-                        .font(.Pretendard.caption1)
-                        .foregroundStyle(Color.gray60)
+                        .font(.Pretendard.caption2)
+                        .foregroundStyle(Color.textSecondary)
                 }
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, 10)
 
-                Divider().frame(height: 18).background(Color.gray15)
+                Divider().frame(height: 18).background(Color.border)
 
                 // 공유
                 Button {
                 } label: {
                     Image(systemName: "square.and.arrow.up")
                         .font(.system(size: 15))
-                        .foregroundStyle(Color.gray60)
+                        .foregroundStyle(Color.textSecondary)
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 10)
                 }
@@ -725,35 +725,35 @@ private extension HomeView {
             }
             .padding(.horizontal, 8)
         }
-        .background(Color.gray0)
+        .background(Color.bgPrimary)
         .clipShape(RoundedRectangle(cornerRadius: 12))
         .overlay(
             RoundedRectangle(cornerRadius: 12)
-                .stroke(Color.gray15, lineWidth: 1)
+                .stroke(Color.border, lineWidth: 1)
         )
     }
 
     func postTagChip(text: String) -> some View {
         Text(text)
-            .font(.Pretendard.caption2)
-            .foregroundStyle(Color.blackSeafoam)
+            .font(.Pretendard.caption3)
+            .foregroundStyle(Color.primary)
             .padding(.horizontal, 8)
             .padding(.vertical, 4)
-            .background(Color.blackSeafoam.opacity(0.08))
+            .background(Color.primary.opacity(0.08))
             .clipShape(Capsule())
     }
 
     func sectionHeader(title: String, action: String, onAction: (() -> Void)? = nil) -> some View {
         HStack {
             Text(title)
-                .font(.Pretendard.body2)
+                .font(.Pretendard.body3)
                 .fontWeight(.semibold)
-                .foregroundStyle(Color.gray90)
+                .foregroundStyle(Color.textPrimary)
             Spacer()
             if !action.isEmpty {
                 Button(action) { onAction?() }
-                    .font(.Pretendard.caption1)
-                    .foregroundStyle(Color.blackSeafoam)
+                    .font(.Pretendard.caption2)
+                    .foregroundStyle(Color.primary)
             }
         }
         .padding(.horizontal, 16)

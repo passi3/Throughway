@@ -34,7 +34,7 @@ struct BannerWebViewController: View {
                 .toolbar {
                     ToolbarItem(placement: .navigationBarTrailing) {
                         Button("닫기") { dismiss() }
-                            .foregroundStyle(Color.gray90)
+                            .foregroundStyle(Color.textPrimary)
                     }
                 }
         }

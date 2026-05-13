@@ -53,7 +53,7 @@ struct MoreActivitiesView: View {
                 }
 
                 Rectangle()
-                    .fill(Color.lightSeafoam)
+                    .fill(Color.primaryLight)
                     .frame(height: 1)
                     .padding(.horizontal, 20)
                     .padding(.vertical, 20)
@@ -70,7 +70,7 @@ struct MoreActivitiesView: View {
 
                         if index < viewModel.state.exciting.count - 1 {
                             Rectangle()
-                                .fill(Color.gray15)
+                                .fill(Color.border)
                                 .frame(height: 1)
                                 .padding(.horizontal, 20)
                         }
@@ -80,20 +80,20 @@ struct MoreActivitiesView: View {
                 .padding(.bottom, 20)
             }
         }
-        .background(Color.gray0)
+        .background(Color.bgPrimary)
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             ToolbarItem(placement: .principal) {
                 Text("EXCITING")
                     .font(.Paperlogy.caption1)
                     .fontWeight(.bold)
-                    .foregroundStyle(Color.blackSeafoam)
+                    .foregroundStyle(Color.primary)
             }
             ToolbarItem(placement: .navigationBarTrailing) {
                 Button { isSearchPresented = true } label: {
                     Image(systemName: "magnifyingglass")
                         .font(.system(size: 18))
-                        .foregroundStyle(Color.gray90)
+                        .foregroundStyle(Color.textPrimary)
                 }
             }
         }
@@ -127,8 +127,8 @@ private extension MoreActivitiesView {
         if contextHeaderIsVisible {
             HStack(alignment: .center, spacing: 10) {
                 Text("게시글 기준")
-                    .font(.Pretendard.caption1)
-                    .foregroundStyle(Color.gray60)
+                    .font(.Pretendard.caption2)
+                    .foregroundStyle(Color.textSecondary)
 
                 if let contextCountry, !contextCountry.isEmpty {
                     contextChip(text: contextCountry)
@@ -149,7 +149,7 @@ private extension MoreActivitiesView {
             if viewModel.state.banners.isEmpty {
                 Rectangle()
                     .fill(LinearGradient(
-                        colors: [Color.blackSeafoam, Color.deepSeafoam],
+                        colors: [Color.primary, Color.primary],
                         startPoint: .topLeading,
                         endPoint: .bottomTrailing
                     ))
@@ -175,9 +175,9 @@ private extension MoreActivitiesView {
     func sectionTitle(_ text: String) -> some View {
         HStack {
             Text(text)
-                .font(.Pretendard.body2)
+                .font(.Pretendard.body3)
                 .fontWeight(.semibold)
-                .foregroundStyle(Color.gray90)
+                .foregroundStyle(Color.textPrimary)
             Spacer()
         }
         .padding(.horizontal, 20)
@@ -185,11 +185,11 @@ private extension MoreActivitiesView {
 
     func contextChip(text: String) -> some View {
         Text(text)
-            .font(.Pretendard.caption2)
-            .foregroundStyle(Color.blackSeafoam)
+            .font(.Pretendard.caption3)
+            .foregroundStyle(Color.primary)
             .padding(.horizontal, 8)
             .padding(.vertical, 5)
-            .background(Color.blackSeafoam.opacity(0.08))
+            .background(Color.primary.opacity(0.08))
             .clipShape(Capsule())
     }
 }
@@ -202,7 +202,7 @@ private extension MoreActivitiesView {
         LazyVGrid(columns: twoCol, spacing: 12) {
             ForEach(0..<4, id: \.self) { _ in
                 RoundedRectangle(cornerRadius: 16)
-                    .fill(Color.gray15)
+                    .fill(Color.bgTertiary)
                     .frame(height: 240)
             }
         }
@@ -218,32 +218,32 @@ private extension MoreActivitiesView {
 
             VStack(alignment: .leading, spacing: 6) {
                 Text(activity.title)
-                    .font(.Pretendard.body3)
+                    .font(.Pretendard.body4)
                     .fontWeight(.semibold)
-                    .foregroundStyle(Color.gray90)
+                    .foregroundStyle(Color.textPrimary)
                     .lineLimit(1)
 
                 HStack(spacing: 6) {
                     HStack(spacing: 3) {
                         Image(systemName: "heart.fill")
                             .font(.system(size: 9))
-                            .foregroundStyle(Color.rosyPunch)
+                            .foregroundStyle(Color.error)
                         Text("\(activity.keepCount)개")
-                            .font(.Pretendard.caption2)
-                            .foregroundStyle(Color.gray60)
+                            .font(.Pretendard.caption3)
+                            .foregroundStyle(Color.textSecondary)
                     }
                     if activity.pointReward > 0 {
                         Text("\(activity.pointReward)P")
-                            .font(.Pretendard.caption2)
+                            .font(.Pretendard.caption3)
                             .fontWeight(.semibold)
-                            .foregroundStyle(Color.blackSeafoam)
+                            .foregroundStyle(Color.primary)
                     }
                 }
 
                 if !activity.tags.isEmpty {
                     Text(activity.tags.map { "#\($0)" }.joined(separator: " "))
-                        .font(.Pretendard.caption2)
-                        .foregroundStyle(Color.gray45)
+                        .font(.Pretendard.caption3)
+                        .foregroundStyle(Color.textTertiary)
                         .lineLimit(2)
                         .lineSpacing(2)
                 }
@@ -254,11 +254,11 @@ private extension MoreActivitiesView {
             .padding(.vertical, 10)
         }
         .frame(width: cardWidth, height: cardHeight)
-        .background(Color.gray0)
+        .background(Color.bgPrimary)
         .clipShape(RoundedRectangle(cornerRadius: 16))
         .overlay(
             RoundedRectangle(cornerRadius: 16)
-                .stroke(Color.gray15, lineWidth: 1)
+                .stroke(Color.border, lineWidth: 1)
         )
     }
 }
@@ -279,9 +279,9 @@ private extension MoreActivitiesView {
                         Image(systemName: "mappin.and.ellipse")
                             .font(.system(size: 10))
                         Text(activity.country)
-                            .font(.Pretendard.caption2)
+                            .font(.Pretendard.caption3)
                     }
-                    .foregroundStyle(Color.gray0)
+                    .foregroundStyle(Color.bgPrimary)
                     .padding(.horizontal, 8)
                     .padding(.vertical, 4)
                     .background(Color.black.opacity(0.35))
@@ -293,16 +293,16 @@ private extension MoreActivitiesView {
                         HStack(spacing: 3) {
                             Image(systemName: "heart.fill")
                                 .font(.system(size: 9))
-                                .foregroundStyle(Color.rosyPunch)
+                                .foregroundStyle(Color.error)
                             Text("\(activity.keepCount)개")
-                                .font(.Pretendard.caption2)
-                                .foregroundStyle(Color.gray0)
+                                .font(.Pretendard.caption3)
+                                .foregroundStyle(Color.bgPrimary)
                         }
                         if activity.pointReward > 0 {
                             Text("\(activity.pointReward)P")
-                                .font(.Pretendard.caption2)
+                                .font(.Pretendard.caption3)
                                 .fontWeight(.semibold)
-                                .foregroundStyle(Color.deepSeafoam)
+                                .foregroundStyle(Color.primary)
                         }
                     }
 
@@ -311,7 +311,7 @@ private extension MoreActivitiesView {
                         Text("광고")
                             .font(.system(size: 10))
                             .fontWeight(.medium)
-                            .foregroundStyle(Color.gray0)
+                            .foregroundStyle(Color.bgPrimary)
                             .padding(.horizontal, 8)
                             .padding(.vertical, 4)
                             .background(Color.white.opacity(0.15))
@@ -337,33 +337,33 @@ private extension MoreActivitiesView {
             VStack(alignment: .leading, spacing: 8) {
                 HStack(alignment: .top) {
                     Text(activity.title)
-                        .font(.Pretendard.body3)
+                        .font(.Pretendard.body4)
                         .fontWeight(.semibold)
-                        .foregroundStyle(Color.gray90)
+                        .foregroundStyle(Color.textPrimary)
                         .lineLimit(1)
                     Spacer()
                     HStack(spacing: 6) {
                         HStack(spacing: 3) {
                             Image(systemName: "heart.fill")
                                 .font(.system(size: 9))
-                                .foregroundStyle(Color.rosyPunch)
+                                .foregroundStyle(Color.error)
                             Text("\(activity.keepCount)개")
-                                .font(.Pretendard.caption2)
-                                .foregroundStyle(Color.gray60)
+                                .font(.Pretendard.caption3)
+                                .foregroundStyle(Color.textSecondary)
                         }
                         if activity.pointReward > 0 {
                             Text("\(activity.pointReward)P")
-                                .font(.Pretendard.caption2)
+                                .font(.Pretendard.caption3)
                                 .fontWeight(.semibold)
-                                .foregroundStyle(Color.blackSeafoam)
+                                .foregroundStyle(Color.primary)
                         }
                     }
                 }
 
                 if !activity.tags.isEmpty {
                     Text(activity.tags.map { "#\($0)" }.joined(separator: " "))
-                        .font(.Pretendard.caption2)
-                        .foregroundStyle(Color.gray45)
+                        .font(.Pretendard.caption3)
+                        .foregroundStyle(Color.textTertiary)
                         .lineLimit(3)
                         .lineSpacing(3)
                 }
@@ -394,11 +394,11 @@ private extension MoreActivitiesView {
 
     func imagePlaceholder(radius: CGFloat) -> some View {
         RoundedRectangle(cornerRadius: radius)
-            .fill(Color.gray15)
+            .fill(Color.bgTertiary)
             .overlay(
                 Image(systemName: "photo")
                     .font(.system(size: 24))
-                    .foregroundStyle(Color.gray30)
+                    .foregroundStyle(Color.textTertiary)
             )
     }
 
@@ -406,12 +406,12 @@ private extension MoreActivitiesView {
     func activityStatusBadge(_ activity: ActivitySummaryDTO) -> some View {
         let isHot = activity.keepCount >= 100
         Text(isHot ? "HOT" : "NEW")
-            .font(.Pretendard.caption2)
+            .font(.Pretendard.caption3)
             .fontWeight(.bold)
-            .foregroundStyle(Color.gray0)
+            .foregroundStyle(Color.bgPrimary)
             .padding(.horizontal, 8)
             .padding(.vertical, 3)
-            .background(isHot ? Color.rosyPunch : Color.blackSeafoam)
+            .background(isHot ? Color.error : Color.primary)
             .clipShape(Capsule())
     }
 
@@ -423,22 +423,22 @@ private extension MoreActivitiesView {
 
         return HStack(spacing: 6) {
             Text(price.final.wonFormatted)
-                .font(.Pretendard.caption1)
+                .font(.Pretendard.caption2)
                 .fontWeight(.bold)
-                .foregroundStyle(Color.blackSeafoam)
+                .foregroundStyle(Color.primary)
 
             if price.original > 0 && price.original != price.final {
                 Text(price.original.wonFormatted)
-                    .font(.Pretendard.caption2)
+                    .font(.Pretendard.caption3)
                     .strikethrough()
-                    .foregroundStyle(Color.gray45)
+                    .foregroundStyle(Color.textTertiary)
             }
 
             if let pct = discountPercent {
                 Text("\(pct)%")
-                    .font(.Pretendard.caption2)
+                    .font(.Pretendard.caption3)
                     .fontWeight(.semibold)
-                    .foregroundStyle(Color.rosyPunch)
+                    .foregroundStyle(Color.error)
             }
         }
     }

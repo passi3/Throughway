@@ -25,7 +25,7 @@ struct ProfileView: View {
                         .padding(.bottom, 20)
 
                     Divider()
-                        .foregroundStyle(Color.gray15)
+                        .foregroundStyle(Color.bgTertiary)
 
                     searchBar
                         .padding(.horizontal, 16)
@@ -34,7 +34,7 @@ struct ProfileView: View {
                     orderListSection
                 }
             }
-            .background(Color.gray0)
+            .background(Color.bgPrimary)
             .navigationTitle("PROFILE")
             .navigationBarTitleDisplayMode(.inline)
         }
@@ -94,7 +94,7 @@ private extension ProfileView {
             Text(viewModel.state.profile?.nick ?? "불러오는 중...")
                 .font(.Pretendard.title1)
                 .fontWeight(.bold)
-                .foregroundStyle(Color.gray90)
+                .foregroundStyle(Color.textPrimary)
 
             categoryChips
 
@@ -105,18 +105,18 @@ private extension ProfileView {
                     viewModel.send(.nickEditTapped)
                 } label: {
                     Text("프로필 수정")
-                        .font(.Pretendard.caption1)
+                        .font(.Pretendard.caption2)
                         .fontWeight(.semibold)
-                        .foregroundStyle(Color.blackSeafoam)
+                        .foregroundStyle(Color.primary)
                         .padding(.horizontal, 16)
                         .padding(.vertical, 8)
-                        .background(Color.lightSeafoam)
+                        .background(Color.primaryLight)
                         .clipShape(RoundedRectangle(cornerRadius: 8))
                 }
 
                 Button("로그아웃", action: onLogout)
-                    .font(.Pretendard.caption1)
-                    .foregroundStyle(Color.rosyPunch)
+                    .font(.Pretendard.caption2)
+                    .foregroundStyle(Color.error)
             }
         }
     }
@@ -129,7 +129,7 @@ private extension ProfileView {
             profileImageContent
                 .overlay(alignment: .bottomTrailing) {
                     Circle()
-                        .fill(Color.blackSeafoam)
+                        .fill(Color.primary)
                         .frame(width: 28, height: 28)
                         .overlay(
                             Image(systemName: "camera.fill")
@@ -147,9 +147,9 @@ private extension ProfileView {
         let size: CGFloat = 120
         if viewModel.state.isUploadingImage {
             Circle()
-                .fill(Color.gray15)
+                .fill(Color.bgTertiary)
                 .frame(width: size, height: size)
-                .overlay(ProgressView().tint(Color.gray45))
+                .overlay(ProgressView().tint(Color.textTertiary))
         } else if let path = viewModel.state.profile?.profileImage,
                   let url = path.serverImageURL {
             KFImage(url)
@@ -162,7 +162,7 @@ private extension ProfileView {
         } else {
             Image(systemName: "person.circle.fill")
                 .resizable()
-                .foregroundStyle(Color.gray30)
+                .foregroundStyle(Color.textTertiary)
                 .frame(width: size, height: size)
                 .clipShape(Circle())
         }
@@ -175,12 +175,12 @@ private extension ProfileView {
             HStack(spacing: 8) {
                 ForEach(rankings, id: \.category) { item in
                     Text("\(item.rank)위 \(item.category)")
-                        .font(.Pretendard.caption1)
+                        .font(.Pretendard.caption2)
                         .fontWeight(.medium)
-                        .foregroundStyle(Color.blackSeafoam)
+                        .foregroundStyle(Color.primary)
                         .padding(.horizontal, 12)
                         .padding(.vertical, 6)
-                        .background(Color.lightSeafoam)
+                        .background(Color.primaryLight)
                         .clipShape(Capsule())
                 }
             }
@@ -191,26 +191,26 @@ private extension ProfileView {
         HStack(spacing: 24) {
             VStack(spacing: 4) {
                 Text(viewModel.state.totalSpent.wonFormatted)
-                    .font(.Pretendard.body2)
+                    .font(.Pretendard.body3)
                     .fontWeight(.bold)
-                    .foregroundStyle(Color.gray90)
+                    .foregroundStyle(Color.textPrimary)
                 Text("총 사용 금액")
-                    .font(.Pretendard.caption2)
-                    .foregroundStyle(Color.gray45)
+                    .font(.Pretendard.caption3)
+                    .foregroundStyle(Color.textTertiary)
             }
 
             Rectangle()
-                .fill(Color.gray15)
+                .fill(Color.bgTertiary)
                 .frame(width: 1, height: 30)
 
             VStack(spacing: 4) {
                 Text("\(viewModel.state.totalPoints.formatted())P")
-                    .font(.Pretendard.body2)
+                    .font(.Pretendard.body3)
                     .fontWeight(.bold)
-                    .foregroundStyle(Color.gray90)
+                    .foregroundStyle(Color.textPrimary)
                 Text("누적 적립 포인트")
-                    .font(.Pretendard.caption2)
-                    .foregroundStyle(Color.gray45)
+                    .font(.Pretendard.caption3)
+                    .foregroundStyle(Color.textTertiary)
             }
         }
     }
@@ -223,19 +223,19 @@ private extension ProfileView {
     var searchBar: some View {
         HStack(spacing: 8) {
             Image(systemName: "magnifyingglass")
-                .foregroundStyle(Color.gray45)
+                .foregroundStyle(Color.textTertiary)
                 .font(.system(size: 14))
 
             TextField("내 액티비티를 검색해보세요", text: Binding(
                 get: { viewModel.state.searchText },
                 set: { viewModel.send(.searchTextChanged($0)) }
             ))
-            .font(.Pretendard.body3)
-            .foregroundStyle(Color.gray90)
+            .font(.Pretendard.body4)
+            .foregroundStyle(Color.textPrimary)
         }
         .padding(.horizontal, 14)
         .padding(.vertical, 10)
-        .background(Color.gray15)
+        .background(Color.bgTertiary)
         .clipShape(RoundedRectangle(cornerRadius: 10))
     }
 }
@@ -250,7 +250,7 @@ private extension ProfileView {
                 Text("내 액티비티")
                     .font(.Pretendard.body1)
                     .fontWeight(.bold)
-                    .foregroundStyle(Color.gray90)
+                    .foregroundStyle(Color.textPrimary)
 
                 Spacer()
             }
@@ -278,10 +278,10 @@ private extension ProfileView {
         VStack(spacing: 12) {
             Image(systemName: "bag")
                 .font(.system(size: 40))
-                .foregroundStyle(Color.gray30)
+                .foregroundStyle(Color.textTertiary)
             Text("구매한 액티비티가 없습니다")
-                .font(.Pretendard.body3)
-                .foregroundStyle(Color.gray45)
+                .font(.Pretendard.body4)
+                .foregroundStyle(Color.textTertiary)
         }
         .frame(maxWidth: .infinity)
         .padding(.top, 60)
@@ -291,9 +291,9 @@ private extension ProfileView {
         HStack(spacing: 12) {
             VStack(alignment: .leading, spacing: 6) {
                 Text(order.activity.title)
-                    .font(.Pretendard.body2)
+                    .font(.Pretendard.body3)
                     .fontWeight(.bold)
-                    .foregroundStyle(Color.gray90)
+                    .foregroundStyle(Color.textPrimary)
                     .lineLimit(2)
 
                 if let date = order.reservationItemName {
@@ -304,19 +304,19 @@ private extension ProfileView {
                             Text(category)
                         }
                     }
-                    .font(.Pretendard.caption1)
-                    .foregroundStyle(Color.gray45)
+                    .font(.Pretendard.caption2)
+                    .foregroundStyle(Color.textTertiary)
                 }
 
                 HStack(spacing: 4) {
                     Text(order.activity.country)
-                        .font(.Pretendard.caption1)
-                        .foregroundStyle(Color.gray60)
+                        .font(.Pretendard.caption2)
+                        .foregroundStyle(Color.textSecondary)
 
                     Text(order.totalPrice.wonFormatted)
-                        .font(.Pretendard.body3)
+                        .font(.Pretendard.body4)
                         .fontWeight(.semibold)
-                        .foregroundStyle(Color.blackSeafoam)
+                        .foregroundStyle(Color.primary)
                 }
 
                 Spacer(minLength: 0)
@@ -330,11 +330,11 @@ private extension ProfileView {
         }
         .padding(16)
         .frame(minHeight: 140)
-        .background(Color.gray0)
+        .background(Color.bgPrimary)
         .clipShape(RoundedRectangle(cornerRadius: 16))
         .overlay(
             RoundedRectangle(cornerRadius: 16)
-                .stroke(Color.gray15, lineWidth: 1)
+                .stroke(Color.border, lineWidth: 1)
         )
     }
 
@@ -344,23 +344,23 @@ private extension ProfileView {
             HStack(spacing: 4) {
                 Image(systemName: "star.fill")
                     .font(.system(size: 11))
-                    .foregroundStyle(Color.deepSeafoam)
+                    .foregroundStyle(Color.primary)
                 Text(String(format: "%.1f", Double(review.rating ?? 0)))
-                    .font(.Pretendard.caption1)
+                    .font(.Pretendard.caption2)
                     .fontWeight(.medium)
-                    .foregroundStyle(Color.gray60)
+                    .foregroundStyle(Color.textSecondary)
             }
         } else {
             Button {
                 viewModel.send(.writeReviewTapped(order))
             } label: {
                 Text("리뷰 작성")
-                    .font(.Pretendard.caption1)
+                    .font(.Pretendard.caption2)
                     .fontWeight(.medium)
-                    .foregroundStyle(Color.blackSeafoam)
+                    .foregroundStyle(Color.primary)
                     .padding(.horizontal, 12)
                     .padding(.vertical, 6)
-                    .background(Color.lightSeafoam)
+                    .background(Color.primaryLight)
                     .clipShape(RoundedRectangle(cornerRadius: 6))
             }
         }
@@ -378,12 +378,12 @@ private extension ProfileView {
                 }
             } else {
                 RoundedRectangle(cornerRadius: 8)
-                    .fill(Color.gray15)
+                    .fill(Color.bgTertiary)
                     .frame(width: 80, height: 80)
                     .overlay(
                         Image(systemName: "photo")
                             .font(.system(size: 20))
-                            .foregroundStyle(Color.gray30)
+                            .foregroundStyle(Color.textTertiary)
                     )
             }
         }
@@ -399,9 +399,9 @@ private extension ProfileView {
             VStack(spacing: 20) {
                 if let order = viewModel.state.reviewTarget {
                     Text(order.activity.title)
-                        .font(.Pretendard.body2)
+                        .font(.Pretendard.body3)
                         .fontWeight(.semibold)
-                        .foregroundStyle(Color.gray90)
+                        .foregroundStyle(Color.textPrimary)
                         .padding(.top, 8)
                 }
 
@@ -412,7 +412,7 @@ private extension ProfileView {
                         } label: {
                             Image(systemName: star <= viewModel.state.reviewRating ? "star.fill" : "star")
                                 .font(.system(size: 28))
-                                .foregroundStyle(star <= viewModel.state.reviewRating ? Color.deepSeafoam : Color.gray30)
+                                .foregroundStyle(star <= viewModel.state.reviewRating ? Color.primary : Color.textTertiary)
                         }
                     }
                 }
@@ -421,10 +421,10 @@ private extension ProfileView {
                     get: { viewModel.state.reviewContent },
                     set: { viewModel.send(.reviewContentChanged($0)) }
                 ))
-                .font(.Pretendard.body3)
+                .font(.Pretendard.body4)
                 .frame(minHeight: 120)
                 .padding(12)
-                .background(Color.gray15)
+                .background(Color.bgTertiary)
                 .clipShape(RoundedRectangle(cornerRadius: 10))
                 .padding(.horizontal, 20)
 
@@ -437,15 +437,15 @@ private extension ProfileView {
                     Button("취소") {
                         viewModel.send(.reviewDismissed)
                     }
-                    .foregroundStyle(Color.gray60)
+                    .foregroundStyle(Color.textSecondary)
                 }
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button("등록") {
                         viewModel.send(.submitReview)
                     }
-                    .font(.Pretendard.body3)
+                    .font(.Pretendard.body4)
                     .fontWeight(.semibold)
-                    .foregroundStyle(Color.blackSeafoam)
+                    .foregroundStyle(Color.primary)
                     .disabled(
                         viewModel.state.isSubmittingReview ||
                         viewModel.state.reviewContent.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
@@ -471,23 +471,23 @@ private extension ProfileView {
             VStack(spacing: 20) {
                 VStack(alignment: .leading, spacing: 8) {
                     Text("닉네임")
-                        .font(.Pretendard.caption1)
-                        .foregroundStyle(Color.gray60)
+                        .font(.Pretendard.caption2)
+                        .foregroundStyle(Color.textSecondary)
 
                     TextField("닉네임을 입력해주세요", text: Binding(
                         get: { viewModel.state.nickDraft },
                         set: { viewModel.send(.nickChanged($0)) }
                     ))
-                    .font(.Pretendard.body2)
+                    .font(.Pretendard.body3)
                     .padding(.horizontal, 14)
                     .padding(.vertical, 12)
-                    .background(Color.gray15)
+                    .background(Color.bgTertiary)
                     .clipShape(RoundedRectangle(cornerRadius: 10))
 
                     if let error = viewModel.state.nickError {
                         Text(error)
-                            .font(.Pretendard.caption2)
-                            .foregroundStyle(Color.rosyPunch)
+                            .font(.Pretendard.caption3)
+                            .foregroundStyle(Color.error)
                     }
                 }
                 .padding(.horizontal, 20)
@@ -502,15 +502,15 @@ private extension ProfileView {
                     Button("취소") {
                         viewModel.send(.nickEditDismissed)
                     }
-                    .foregroundStyle(Color.gray60)
+                    .foregroundStyle(Color.textSecondary)
                 }
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button("저장") {
                         viewModel.send(.nickSaveTapped)
                     }
-                    .font(.Pretendard.body3)
+                    .font(.Pretendard.body4)
                     .fontWeight(.semibold)
-                    .foregroundStyle(Color.blackSeafoam)
+                    .foregroundStyle(Color.primary)
                     .disabled(viewModel.state.isUpdatingNick || viewModel.state.nickDraft.isEmpty)
                 }
             }
