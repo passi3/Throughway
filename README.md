@@ -26,6 +26,7 @@ Throughway는 여행 액티비티 탐색부터 예약·결제, 여행 경험 공
 | 결제 | iamport-ios |
 | 위치·지도 | CoreLocation, MapKit |
 ## 프로젝트 구조
+```
 Throughway/
 ├── ThroughwayApp.swift   # 앱 진입점 및 알림·외부 URL 처리
 ├── Feature/              # 기능별 View, ViewModel, State·Intent
@@ -37,3 +38,4 @@ Throughway/
 │   └── Cache/            # 사용자 상호작용 캐시
 ├── Shared/               # 공통 컴포넌트, 디자인 및 유틸리티
 └── Resources/            # 폰트 등 리소스
+```
